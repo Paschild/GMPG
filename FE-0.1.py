@@ -2,6 +2,8 @@ from openpyxl import load_workbook
 import matplotlib.pyplot as plt
 import wx
 
+'''Hallooooo'''
+
 global istodersoll
 istodersoll = 0
 global istodersoll_text
