@@ -21,7 +21,7 @@ class Cell:
         print(self.value)
 
 def getdata():
-    file_location = "/Users/mzichert/Documents/PycharmProjects/FE-Versuche/Haushaltsbücher_MPG_Test.xlsx"
+    file_location = "/Users/mzichert/Documents/FilesforFE/Haushaltsbücher_MPG_Test.xlsx"
     wb = load_workbook(file_location, data_only=True)
     cells =     []
     for s in range(len(wb.sheetnames)):

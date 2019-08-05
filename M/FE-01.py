@@ -2,8 +2,6 @@ from openpyxl import load_workbook
 import matplotlib.pyplot as plt
 import wx
 
-'''Hallooooooooooo'''
-
 global istodersoll
 istodersoll = 0
 global istodersoll_text
@@ -86,7 +84,7 @@ class Cell:
 
 
 def gettemplate():
-    file_location = "/Users/mzichert/Documents/FilesforFE/Haushaltsbücher_MPI_Template.xlsx"
+    file_location = "/Users/mzichert/Documents/FilesforFE/Haushaltsbücher_MPI_Template.xlsx"
     wb = load_workbook(file_location, data_only=True)
     template_cells = []
     for sheet in range(len(wb.sheetnames)):
@@ -216,7 +214,7 @@ def plot_matplot(new_cells):
     plt.show()
 
 
-filename = "/Users/mzichert/Documents/FilesforFE/Haushaltsbücher_MPG_Test.xlsx"
+filename = "/Users/mzichert/Documents/FilesforFE/Haushaltsbücher_MPG_Test.xlsx"
 wanted = "Test"
 
 
