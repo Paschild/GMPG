@@ -18,3 +18,4 @@ Collections
 Bsp: default dictionary | Dictionary, bei dem der Datentyp des Inhalts schon definiert ist. 
  Nützlich für verschachtelte Dictionaries. | vorinstalliert | from collections import defaultdict | 
  https://docs.python.org/2/library/collections.html |
+
