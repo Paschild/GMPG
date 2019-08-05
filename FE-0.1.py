@@ -2,7 +2,7 @@ from openpyxl import load_workbook
 import matplotlib.pyplot as plt
 import wx
 
-'''Hallooooo'''
+'''Hallooooooooo'''
 
 global istodersoll
 istodersoll = 0
