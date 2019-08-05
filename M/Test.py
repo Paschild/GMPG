@@ -1,7 +1,7 @@
 from openpyxl import load_workbook
 import matplotlib.pyplot as plt
 import wx
-import wx.grid as gridlib
+import wx.grid
 from collections import defaultdict
 
 global istodersoll
@@ -10,15 +10,19 @@ global istodersoll_text
 istodersoll_text = ""
 
 
-class MyGrid(wx.Frame):
+class MyFenster(wx.Frame):
+
+
+
+class MyGrid(wx.grid.Grid):
     def __init__(self, new_dict_template):
-        wx.Frame.__init__(self, parent = None, title = "Auswahlraster", size=(500, 250))
+        wx.grid.Grid.__init__(self, parent = None, title = "Auswahlraster", size=(500, 250))
         panel = wx.Panel(self)
 
 
 
 
-        myRaster = gridlib.Grid(panel)
+        myRaster = grid.Grid(panel)
         myRaster.CreateGrid(150, 7)
         myRaster.EnableEditing(False)
 
@@ -43,50 +47,6 @@ class MyGrid(wx.Frame):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(myRaster)
         panel.SetSizer(sizer)
-
-
-class AuswahlBox(wx.Frame):
-    def __init__(self, parent, title):
-        super(AuswahlBox, self).__init__(parent, title=title, size=(250, 200))
-
-        panel = wx.Panel(self)
-        box = wx.BoxSizer(wx.VERTICAL)
-        auswahl = ["Auswahl treffen", "IST", "SOLL"]
-
-        self.label = wx.StaticText(panel, label="IST oder SOLL?", style=wx.ALIGN_CENTER)
-        box.Add(self.label, 0, wx.EXPAND | wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 15)
-
-        self.combo = wx.ComboBox(panel, choices=auswahl)
-        box.Add(self.combo, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 20)
-        self.combo.Bind(wx.EVT_COMBOBOX, self.bei_Auswahl)
-
-        self.button = wx.Button(panel, label="Okay", style=wx.ALIGN_CENTER_HORIZONTAL)
-        box.Add(self.button, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 20)
-        self.button.Bind(wx.EVT_BUTTON, self.bei_Click)
-
-
-        panel.SetSizer(box)
-        self.Center()
-        self.Show()
-
-    def bei_Auswahl(self, event):
-        global istodersoll
-        global istodersoll_text
-        if self.combo.GetValue() == "IST":
-            self.label.SetLabel("Es wurde " + self.combo.GetValue() + " ausgewählt")
-            istodersoll = 1
-            istodersoll_text = " (IST-Werte)"
-        elif self.combo.GetValue() == "SOLL":
-            self.label.SetLabel("Es wurde " + self.combo.GetValue() + " ausgewählt")
-            istodersoll = 2
-            istodersoll_text = " (SOLL-Werte)"
-        else:
-            self.label.SetLabel("Bitte IST oder SOLL auswählen")
-            istodersoll = 0
-            print("Bitte IST oder SOLL auswählen")
-
-    def bei_Click(self, event):
-        self.Close()
 
 
 class Template_Cell:
@@ -255,10 +215,6 @@ def plot_matplot(new_cells):
 filename = "/Users/mzichert/Documents/FilesforFE/Haushaltsbücher_MPG_Test.xlsx"
 wanted = "Test"
 
-
-#app = wx.App()
-#AuswahlBox(None, 'Auswahlmenü')
-#app.MainLoop()
 
 #new_cells = getdata(wanted)
 #plot_matplot(new_cells)

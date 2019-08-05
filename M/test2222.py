@@ -1,17 +1,38 @@
-import openpyxl
+import wx
+import wx.grid
 
-wb = openpyxl.load_workbook(filename=r"/Users/mzichert/Documents/FE-Versuche/Haushaltsbücher_MPG_Test.xlsx")
-x=1
-for y in range(1, 20):
-    c=wb.active.cell(row=y, column=x)
-    print(getattr(c.fill.fgColor, c.fill.fgColor.type))
+class Fenster(wx.Frame):
+    def __init__(self):
+        '''Constructor, der das Fenster erzeugt'''
+        wx.Frame.__init__(self, parent=None, title = "Fenster", size=(1000, 700))
+
+        self.panel = wx.Panel(self, size=(800, 700))
+
+        box = wx.BoxSizer(wx.VERTICAL)
+
+
+        self.button = wx.Button(self.panel, 0, label="plot me")
+
+        self.myGrid = MyGrid(self.panel)
+        box.Add(self.myGrid)
+
+
+        self.Centre()
+        self.Show()
+
+class MyGrid(wx.grid.Grid):
+    def __init__(self, parent):
+        wx.grid.Grid.__init__(self, parent)
+
+
+        self.parent = parent
+        self.CreateGrid(100, 100)
+
+        self.Show()
 
 
 
 
-'''for s in range(len(wb.sheetnames)):
-    if wb.sheetnames[s] == "Tabelle1":
-        wb.active = s
-        i = s['A1'].fill.start_color.index  # Green Color
-        Colors = styles.colors.COLOR_INDEX
-        result = str(Coloros[i])'''
+app = wx.App()
+Fenster()
+app.MainLoop()
