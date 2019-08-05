@@ -1,6 +1,4 @@
-# GMPG
-
-Nützliche Python-Bibliotheken:
+# Nützliche Python-Bibliotheken:
 
 MatPlotLib | Zum erstellen von Diagrammen | pip install matplotlib | import matplotlib.pyplot _as plt_ | 
 https://matplotlib.org/ |
