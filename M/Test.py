@@ -10,21 +10,41 @@ global istodersoll_text
 istodersoll_text = ""
 
 
-class MyFenster(wx.Frame):
+class Fenster(wx.Frame):
+    def __init__(self, title, new_dict_template, parent=None):
+        '''Constructor, der das Fenster erzeugt'''
+        # wx.Frame.__init__(self, parent=None, title = "Fenster", size=(1000, 700))
+        super(Fenster, self).__init__(title, new_dict_template, parent=parent, size=(800, 800))
 
+        panel = wx.Panel(self, size=(800, 700))
+        panel.SetBackgroundColour("gray")
+        box = wx.BoxSizer(wx.VERTICAL)
 
+        self.label = wx.StaticText(panel, label="Übersicht", style=wx.ALIGN_CENTER)
+        box.Add(self.label, 0, wx.EXPAND | wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 15)
+
+        self.button = wx.Button(panel, 0, label="Close", )
+        self.button.Bind(wx.EVT_BUTTON, self.bei_Click)
+
+        self.myGrid = MyGrid(panel, new_dict_template)
+        box.Add(self.myGrid)
+
+        panel.SetSizer(box)
+        self.Centre()
+        self.Show()
+
+    def bei_Click(self, event):
+        self.Close()
 
 class MyGrid(wx.grid.Grid):
-    def __init__(self, new_dict_template):
-        wx.grid.Grid.__init__(self, parent = None, title = "Auswahlraster", size=(500, 250))
-        panel = wx.Panel(self)
+    def __init__(self, parent):
+        wx.grid.Grid.__init__(self, parent)
 
+        self.parent = parent
+        self.CreateGrid(150, 10)
+        self.EnableEditing(False)
 
-
-
-        myRaster = grid.Grid(panel)
-        myRaster.CreateGrid(150, 7)
-        myRaster.EnableEditing(False)
+        self.Show()
 
         '''Überschriften'''
         spalte = 0
@@ -47,6 +67,7 @@ class MyGrid(wx.grid.Grid):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(myRaster)
         panel.SetSizer(sizer)
+
 
 
 class Template_Cell:
@@ -220,6 +241,7 @@ wanted = "Test"
 #plot_matplot(new_cells)
 
 new_template_cells, new_dict_template = gettemplate()
+print(new_dict_template)
 #for cell in new_template_cells:
     #if cell.sheet == "1998-2002":
         #print(cell.value)
@@ -230,7 +252,7 @@ new_template_cells, new_dict_template = gettemplate()
     #break
 
 app = wx.App()
-frame = MyGrid(new_dict_template)
+frame = Fenster(title="Fenster", new_dict_template)
 frame.Show()
 app.MainLoop()
 

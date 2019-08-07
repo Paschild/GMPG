@@ -13,9 +13,7 @@ from openpyxl import load_workbook
 from matplotlib import use
 use('WXAgg')
 import matplotlib.pyplot as plt
-import plotly.graph_objects as go
 from fpdf import FPDF
-import textwrap
 
 '''
 Eine Übersicht über alle wx.Python widgets findet sich unter folgendem Link:
@@ -42,19 +40,26 @@ class PDFReport:
         self.titel = None
         self.konzepte = defaultdict(dict)
         self.pdf = FPDF()
-        self.tmpPDf = FPDF()
-        self.links = []     # List of Tuples: (Konzeptname, Link_id)
-        self.inhaltsverzeichnis = defaultdict(list)
+        self.inhaltsverzeichnis = {}
 
     def create_content_table(self):
+        self.pdf = FPDF()
         self.pdf.add_page()
         self.pdf.set_font('Times', 'B', 12)
         self.pdf.cell(w=200, h=12, txt="Inhaltsverzeichnis", ln=2)
         self.pdf.set_font('Times', size=10)
 
-        '''for i in self.konzepte.keys():
-            self.inhaltsverzeichnis[i].append(self.pdf.cell(w=20, h=10, txt=" - "))
-            self.inhaltsverzeichnis[i].append(self.pdf.cell(w=100, h=10, txt=""))'''
+        self.pdf.cell(w=20, h=10, txt=" - ")
+        link = self.pdf.add_link()
+        self.pdf.set_link(link, page=2)
+        self.pdf.cell(w=100, h=10, txt="Diagramm", link=link, ln=1)
+
+        for konzeptname, page in self.inhaltsverzeichnis.items():
+            self.pdf.cell(w=20, h=10, txt=" - ")
+            link = self.pdf.add_link()
+            self.pdf.set_link(link, page=page + 1)
+            self.pdf.cell(w=100, h=10, txt=konzeptname, link=link, ln=1)
+        return
 
     def create_content(self):
         for konzeptname, konzeptobjekt in frame.konzepte.items():
@@ -62,47 +67,65 @@ class PDFReport:
             sorted_lst_cells = sorted(konzeptobjekt.cells, key=itemgetter(1))
 
             for konzeptcell in sorted_lst_cells:
-                kategorien.append((dct_cells[konzeptcell].value, konzeptcell))
+                if model.RECHNUNGSTYP == "INST":
+                    kategorien.append((dct_cells[konzeptcell].value, konzeptcell))
+                else:
+                    kategorien.append((model.get_dct_cells()[konzeptcell].value, konzeptcell))
+            if model.RECHNUNGSTYP == "INST":
+                years = worksheets
+            else:
+                years = range(1948, 2006)
 
-            for i, sheet in enumerate(worksheets):
+            for i, sheet in enumerate(years):
                 xkategorien = []
                 for kat in kategorien:
                     if kat[1][1] == i:
-                        xkategorien.append(kat[0])
+                        if model.RECHNUNGSTYP == "INST":
+                            xkategorien.append(kat[0])
+                        else:
+                            if kat[0][0].spezifizierung:
+                                xkategorien.append(kat[0][0].bezeichnung + " (" + kat[0][0].spezifizierung + ")")
+                            else:
+                                xkategorien.append(kat[0][0].bezeichnung)
                 txt_kategorien = " \n".join(xkategorien)
                 txt_kategorien = txt_kategorien.replace('–', '-')
+                txt_kategorien = txt_kategorien.replace("\u0308", "_")
 
                 self.konzepte[konzeptname][sheet] = txt_kategorien
+        return
 
-    def create_pdf(self, filename, image):
+    def create_pdf(self, image, filename="Test", toc=False):   # toc = Table of Content
+        if toc:
+            self.create_content_table()
+
         self.pdf.set_font('Times', size=10)
 
         # Grafiken:
         self.pdf.add_page()
         self.pdf.image(image, w=200, h=150)
 
-        for i, (konzeptname, sheets) in enumerate(self.konzepte.items()):
+        for konzeptname, sheets in self.konzepte.items():
             self.pdf.add_page()
             self.pdf.set_font('Times', 'B', 12)
             self.pdf.cell(w=50, h=12, txt="", ln=1)
             self.pdf.cell(w=50, h=12, txt=konzeptname, ln=1)
             self.pdf.set_font('Times', size=10)
 
-            '''self.inhaltsverzeichnis[konzeptname]'''
+            if not toc:
+                self.inhaltsverzeichnis[konzeptname] = self.pdf.page_no()
 
             for sheet, txt_kategorien in sheets.items():
-                self.pdf.cell(w=25, h=10, txt=sheet)
+                self.pdf.cell(w=25, h=10, txt=str(sheet))
                 self.pdf.multi_cell(w=100, h=10, txt=txt_kategorien)
 
-        self.pdf.output(filename + '.pdf', 'F')
-
-
-
-
-
-
-
-
+        if not toc:
+            self.create_pdf(image=image, filename=filename, toc=True)
+            # alte pdf wird überschrieben.
+            # Nur Seitenzahlen bleiben in self.inhaltsverzeichnis gespeichert
+        else:
+            self.pdf.output(filename + '.pdf', 'F')
+            os.system('open toc_test.pdf&')
+        return
 
 
 class Konzept:
@@ -138,9 +161,9 @@ class ExcelCell:
 
         # ab diesem Zeitpunkt sind die Werte in den Haushaltsplänen in TDM angegeben
         if (self.year > 1965 and self.type == "IST") or (self.year > 1966 and self.type == "SOLL"):
-            self.betrag = betrag * 1000
-        else:
             self.betrag = betrag
+        else:
+            self.betrag = betrag / 1000
 
         # Die Einnahmen sind ab 1997/98 negativ aufgeführt. Dies hatten wir so in den Excel-Tabellen übernommen.
         if ((self.year > 1997 and self.type == "IST") or (self.year > 1998 and self.type == "SOLL")) and self.row < 25:
@@ -154,11 +177,6 @@ class ExcelCell:
             # # habe es nun in line_plot_inst() geändert. Inflationsbereinigt werden die Daten nach 1999 nicht angezeigt
             pass
 
-class SankeyLink:
-    def __init__(self, source=None, target=None, value=None):
-        self.source = source
-        self.target = target
-        self.value = value
 
 # Das erste Fenster, welches sich beim starten des Programms öffnet.
 class DialogRechnungstypInit(wx.Dialog):
@@ -388,6 +406,73 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
         except AttributeError:  # for cells without oberkategorie
             pass
 
+    def show_popup_menu(self, event):
+        self.this_row = event.GetRow()
+        self.this_col = event.GetCol()
+        if not hasattr(self, "popupID1"):
+            self.popupID1 = wx.NewId()
+            self.popupID2 = wx.NewId()
+            self.popupID3 = wx.NewId()
+            self.popupID4 = wx.NewId()
+
+        menu = wx.Menu()
+        item = wx.MenuItem(menu, self.popupID1, "trigger Cell")
+        item_02 = wx.MenuItem(menu, self.popupID2, "trigger category")
+        item_03 = wx.MenuItem(menu, self.popupID3, "select whole category")
+        item_04 = wx.MenuItem(menu, self.popupID4, "unselect whole Category")
+
+        sub_menu = wx.Menu()
+        sub_menu.Append(item_02)
+        sub_menu.Append(item_03)
+        sub_menu.Append(item_04)
+
+        menu.Append(item)
+        menu.Append(wx.NewId(), "Category", sub_menu)
+
+        self.PopupMenu(menu)
+
+        self.Bind(wx.EVT_MENU, self.select_cell, item)
+        self.Bind(wx.EVT_MENU, self.trigger_kategorie_from_popup, item_02)
+        self.Bind(wx.EVT_MENU, self.select_whole_category_from_popup, item_03)
+        self.Bind(wx.EVT_MENU, self.unselect_whole_category_from_popup, item_04)
+        menu.Destroy()
+
+    def trigger_kategorie_from_popup(self, _):
+        kat_id = self.get_cell(self.this_row, self.this_col).value[0].id
+        for c in model.get_dct_cells().values():
+            if c.value[0].id == kat_id:
+                if c.color != active_konzeptColor:
+                    c.color = active_konzeptColor
+                    c.konzept = active_konzept
+                    if (c.row, c.col) not in self.parent.GetParent().konzepte[c.konzept.name].cells:
+                        self.parent.GetParent().konzepte[c.konzept.name].cells.append((c.row, c.col))
+                else:
+                    if c.color != WHITE:
+                        self.parent.GetParent().konzepte[c.konzept.name].cells.remove((c.row, c.col))
+                    c.color = WHITE
+                    c.konzept = None
+                self.SetCellBackgroundColour(c.row, c.col, c.color)
+        self.ForceRefresh()
+
+    def select_whole_category_from_popup(self, _):
+        kat_id = self.get_cell(self.this_row, self.this_col).value[0].id
+        for c in model.get_dct_cells().values():
+            if c.value[0].id == kat_id:
+                c.color = active_konzeptColor
+                c.konzept = active_konzept
+                if (c.row, c.col) not in self.parent.GetParent().konzepte[c.konzept.name].cells:
+                    self.parent.GetParent().konzepte[c.konzept.name].cells.append((c.row, c.col))
+                self.SetCellBackgroundColour(c.row, c.col, c.color)
+        self.ForceRefresh()
+
+    def unselect_whole_category_from_popup(self, _):
+        kat_id = self.get_cell(self.this_row, self.this_col).value[0].id
+        for c in model.get_dct_cells().values():
+            if c.value[0].id == kat_id:
+                self.SetCellBackgroundColour(c.row, c.col, WHITE)
+                c.konzept = None
+        self.ForceRefresh()
+
     def set_cellvalue(self, cellpos, value):
         cell_row, cell_col = cellpos
         self.SetCellValue(cell_row, cell_col, value)
@@ -398,7 +483,10 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
                                                 # Konzept dieses auch direkt auf Aktiv gesetzt und macht diese Bedingung
                                                 # evtl überflüßig
             try:
-                c = dct_cells[(event.GetRow(), event.GetCol())] # c = Zelle, die von der Maus angewählt wurde
+                if model.RECHNUNGSTYP == "INST":
+                    c = dct_cells[(event.GetRow(), event.GetCol())] # c = Zelle, die von der Maus angewählt wurde
+                else:
+                    c = model.get_dct_cells()[(self.this_row, self.this_col)]
 
                 if model.RECHNUNGSTYP == "INST" and c.row < 9:
                     pass
@@ -699,6 +787,7 @@ class InstitutsForm(wx.Frame):
             # Bindings for "EA" or "VÜ"
             self.button.Bind(wx.EVT_BUTTON, self.button_click_gesamt)
             self.myGrid.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.myGrid.trigger_kategorie)
+            self.myGrid.Bind(wx.grid.EVT_GRID_CELL_RIGHT_CLICK, self.myGrid.show_popup_menu)
             self.Bind(wx.EVT_MENU, self.button_click_gesamt, self.plotItem)
 
             self.sizer_controller.Hide(self.checkbox_sum)
@@ -1069,154 +1158,22 @@ class InstitutsForm(wx.Frame):
         found_cells = []
         self.myGrid.ForceRefresh()
 
-
-    def create_sankey_objects(self, _):
-        data = self.get_inst_konzepte()
-
-        for institute, konzepte in data.items():
-            for konzeptname, lst_cells in konzepte.items():
-                lst_cells = [x for x in lst_cells if x.type == "IST"]
-                lst_cells.sort(key=lambda x: x.year)
-
-
-                last_objects = []
-                count = 0
-                link_objects = []
-                for i, cell in enumerate(lst_cells):
-                    if i == 0:
-                        last_objects.append(cell)
-                    elif cell.year == last_objects[0].year:
-                        last_objects.append(cell)
-                    elif cell.year == last_objects[-1].year:
-                        count += 1
-                        link_objects.append(SankeyLink(source=i - count, target=i, value=cell.betrag))
-                        last_objects.append(cell)
-                    else:
-                        count = 0
-                        link_objects.append(SankeyLink(source=i-1, target=i, value=cell.betrag))
-                        last_objects.append(cell)
-
-
-
-
-                fig = go.Figure(data=[go.Sankey(
-                    node=dict(
-                        pad=15,
-                        thickness=20,
-                        line=dict(color="black", width=0.5),
-                        # label = Jahr
-                        label=[x.category for x in lst_cells],
-                        color="blue"
-                    ),
-                    link=dict(
-                        source=[x.source for x in link_objects],  # indices correspond to labels, eg A1, A2, A2, B1, ...
-                        target=[x.target for x in link_objects],
-                        value=[x.value for x in link_objects]
-                    ))])
-
-                fig.update_layout(title_text="Basic Sankey Diagram", font_size=10)
-                fig.show()
-
-    def create_report_images(self, _):
-        data = self.get_inst_konzepte()
-        filename = ""
-        for institute, konzepte in data.items():
-            for konzeptname, lst_cells in konzepte.items():
-
-                color = frame.konzepte[konzeptname].color
-
-                new_lst_cells = [x for x in lst_cells if x.type == "IST"]
-                new_lst_cells.sort(key=lambda x: x.year)
-
-                dct_categories = defaultdict(list)
-                dct_bars = {}
-
-                for obj in new_lst_cells:
-                    dct_categories[obj.category].append(obj)
-
-                for lst in dct_categories.values():
-                    dct_bars[lst[0].category] = (lst[0].year, lst[-1].year, color)
-
-                for name, bar in dct_bars.items():
-                    plt.barh(y=name, width=bar[1] - bar[0], left=bar[0], color=bar[2])
-
-            filename = "_".join(konzepte.keys())
-            filename = filename + 'png'
-            plt.savefig(filename)
-            plt.show()
-            break
-
-        return filename
-
-
-    def create_report_tables(self, _, image):
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font('Times', size=10)
-
-        # Inhaltsverzeichnis:
-        '''
-        pdf.set_font('Times', 'B', 12)
-        pdf.cell(w=200, h=12, txt="Inhaltsverzeichnis", ln=2)
-        pdf.set_font('Times', size=10)
-        pdf.cell(w=20, h=10, txt="-")
-        pdf.cell(w=100, h=10, txt="Testeintrag", link=)'''
-
-
-        # Grafiken:
-        pdf.add_page()
-        pdf.image(image, w=200, h=150)
-
-        # Benutzte Kategorien pro Konzept:
-        content = {}
-        for konzeptname, konzeptopjekt in self.konzepte.items():
-            kategorien = []
-            sorted_lst_cells = sorted(konzeptopjekt.cells, key=itemgetter(1))
-
-            for konzeptcell in sorted_lst_cells:
-                kategorien.append((dct_cells[konzeptcell].value, konzeptcell))
-
-            pdf.add_page()
-            content[konzeptname] = pdf.page_no()
-            pdf.set_font('Times', 'B', 12)
-            pdf.cell(w=50, h=12, txt="", ln=1)
-            pdf.cell(w=50, h=12, txt=konzeptname, ln=1)
-            pdf.set_font('Times', size=10)
-
-            for i, sheet in enumerate(worksheets):
-                xkategorien = []
-                for kat in kategorien:
-                    if kat[1][1] == i:
-                        xkategorien.append(kat[0])
-                txt_kategorien = " \n".join(xkategorien)
-                txt_kategorien = txt_kategorien.replace('–', '-')
-
-                pdf.cell(w=25, h=10, txt=sheet)
-                pdf.multi_cell(w=100, h=10, txt=txt_kategorien)
-
-        pdf.output('testreport_02.pdf', 'F')
-
-
     def create_report(self, _):
-        # Sankey test :)
-
-        # self.create_report_images(_)
-
-        image = self.plot_settings(xshow=False)
-        #self.create_report_tables(_, image)
-        # self.create_sankey_objects(_, image)
+        if model.RECHNUNGSTYP == "INST":
+            image = self.plot_settings(xshow=False)
+        else:
+            image = line_plot_gesamt(frame.new_get_konzept(), mode=0, xshow=False)
 
         myPDF = PDFReport()
         myPDF.create_content()
-        myPDF.create_content_table()
-        myPDF.create_pdf("Test_Class_Report", image)
-
-
+        # myPDF.create_pdf(image=image)
+        myPDF.create_pdf(filename="toc_test", image=image)
+        return
 
 
 def line_plot_inst(data, typ, grouping_by, mode, inflation, xshow=True):
     ymin, ymax, steps = get_limits(data, typ)
-    #fig = plt.figure()
+    fig = plt.figure()
     plt.close()
     if frame.checkbox_sum.GetValue():
         ax = {}
@@ -1402,23 +1359,24 @@ def line_plot_inst(data, typ, grouping_by, mode, inflation, xshow=True):
     if xshow:
         plt.show()
     else:
-        plt.savefig('testchart.png')
+        plt.savefig('testchart.png', format='png', dpi=fig.dpi * 2)
         return 'testchart.png'
 
 
-def line_plot_gesamt_settings():
+def line_plot_gesamt_settings(xshow=True):
     if len(frame.checkbox.GetCheckedItems()) != 0:
-        checked_institutes_paths = []
+        checked_saves_paths = []
         for x in frame.checkbox.GetCheckedItems():
-            checked_institutes_paths.append([x for x in get_saves().values()][x])
+            checked_saves_paths.append([x for x in get_saves().values()][x])
 
-        dlg = DialogGesamtPlotSettings(frame, "plot Settings", checked_institutes_paths).ShowModal()
+        dlg = DialogGesamtPlotSettings(frame, "plot Settings", checked_saves_paths).ShowModal()
     else:
-        line_plot_gesamt(frame.new_get_konzept(), mode=0)
+        line_plot_gesamt(frame.new_get_konzept(), mode=0, xshow=xshow)
 
 
-def line_plot_gesamt(dct_konzepte, mode):
+def line_plot_gesamt(dct_konzepte, mode, xshow=True):
     legend = []
+    fig = plt.figure()
 
     # User fragen, ob der Plot Inflationsbereinigt sein soll oder nicht.
     bool_inflation = False
@@ -1555,7 +1513,11 @@ def line_plot_gesamt(dct_konzepte, mode):
     bottom, top = plt.ylim()
     plt.ylim(0, top)
     plt.legend(legend)
-    plt.show()
+    if xshow:
+        plt.show()
+    else:
+        plt.savefig('testchart.png', format='png', dpi=fig.dpi * 2)
+        return 'testchart.png'
 
 
 def import_inst_template():

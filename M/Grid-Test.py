@@ -8,13 +8,13 @@ class Fenster(wx.Frame):
         super(Fenster, self).__init__(parent, title=title, size=(800,800))
 
         panel = wx.Panel(self, size=(800, 700))
-
+        panel.SetBackgroundColour("gray")
         box = wx.BoxSizer(wx.VERTICAL)
 
-        self.label = wx.StaticText(panel, label="IST oder SOLL?", style=wx.ALIGN_CENTER)
+        self.label = wx.StaticText(panel, label="Übersicht", style=wx.ALIGN_CENTER)
         box.Add(self.label, 0, wx.EXPAND | wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 15)
 
-        self.button = wx.Button(panel, 0, label="Close", style=wx.ALIGN_CENTER_HORIZONTAL)
+        self.button = wx.Button(panel, 0, label="Close", )
         self.button.Bind(wx.EVT_BUTTON, self.bei_Click)
 
         self.myGrid = MyGrid(panel)
@@ -24,12 +24,9 @@ class Fenster(wx.Frame):
         self.Centre()
         self.Show()
 
-
-
-
-
     def bei_Click(self, event):
         self.Close()
+
 
 class MyGrid(wx.grid.Grid):
     def __init__(self, parent):
@@ -38,6 +35,8 @@ class MyGrid(wx.grid.Grid):
 
         self.parent = parent
         self.CreateGrid(150, 10)
+        self.EnableEditing(False)
+
 
         self.Show()
 
