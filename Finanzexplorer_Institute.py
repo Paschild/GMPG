@@ -802,7 +802,7 @@ class InstitutsForm(wx.Frame):
         self.btn_save.Bind(wx.EVT_BUTTON, self.save_konzepte)
 
     def set_institutes(self):
-        for (dirpath, dirnames, filenames) in os.walk("Institute"):
+        for (dirpath, dirnames, filenames) in os.walk("../Institute"):
             filenames = [x for x in filenames
                          if "Haushaltsb" in x
                          and ".xlsx" in x
@@ -1521,7 +1521,7 @@ def line_plot_gesamt(dct_konzepte, mode, xshow=True):
 
 
 def import_inst_template():
-    wb = load_workbook("Institute/Haushaltsbücher_MPI_Template.xlsx", data_only=True)
+    wb = load_workbook("../Institute/Haushaltsbücher_MPI_Template.xlsx", data_only=True)
     grid_col = 0
     for s in range(len(wb.sheetnames)):
         if wb.sheetnames[s] == "1954-1963":             # Sonderregel für dieses Sheet,
