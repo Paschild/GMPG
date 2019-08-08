@@ -21,3 +21,16 @@ https://docs.python.org/2/library/collections.html
 Bsp: default dictionary | Dictionary, bei dem der Datentyp des Inhalts schon definiert ist. 
 Nützlich für verschachtelte Dictionaries. | vorinstalliert | from collections import defaultdict
 
+
+# Weitere nützliche Links:
+
+__Graphische Oberfläche und Auswahlbox:__   
+https://www.tutorialspoint.com/wxpython/wx_combobox_choice_class    
+https://www.tutorialspoint.com/wxpython/wxpython_gui_builder_tools.htm    
+
+__Grid:__   
+http://www.blog.pythonlibrary.org/2010/03/18/wxpython-an-introduction-to-grids/   
+http://www.blog.pythonlibrary.org/2010/04/04/wxpython-grid-tips-and-tricks/   
+
+__Klassen:__    
+https://www.w3schools.com/python/python_inheritance.asp   
