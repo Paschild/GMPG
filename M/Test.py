@@ -11,22 +11,23 @@ istodersoll_text = ""
 
 
 class Fenster(wx.Frame):
-    def __init__(self, title, new_dict_template, parent=None):
+    def __init__(self, parent, title, data):
         '''Constructor, der das Fenster erzeugt'''
         # wx.Frame.__init__(self, parent=None, title = "Fenster", size=(1000, 700))
-        super(Fenster, self).__init__(title, new_dict_template, parent=parent, size=(800, 800))
+        super(Fenster, self).__init__(parent, title=title, size=(800, 800))
 
         panel = wx.Panel(self, size=(800, 700))
         panel.SetBackgroundColour("gray")
         box = wx.BoxSizer(wx.VERTICAL)
 
+        print(data)
         self.label = wx.StaticText(panel, label="Übersicht", style=wx.ALIGN_CENTER)
         box.Add(self.label, 0, wx.EXPAND | wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 15)
 
         self.button = wx.Button(panel, 0, label="Close", )
         self.button.Bind(wx.EVT_BUTTON, self.bei_Click)
 
-        self.myGrid = MyGrid(panel, new_dict_template)
+        self.myGrid = MyGrid(panel, data)
         box.Add(self.myGrid)
 
         panel.SetSizer(box)
@@ -37,7 +38,7 @@ class Fenster(wx.Frame):
         self.Close()
 
 class MyGrid(wx.grid.Grid):
-    def __init__(self, parent):
+    def __init__(self, parent, data):
         wx.grid.Grid.__init__(self, parent)
 
         self.parent = parent
@@ -48,10 +49,10 @@ class MyGrid(wx.grid.Grid):
 
         '''Überschriften'''
         spalte = 0
-        for key in new_dict_template:
-            myRaster.SetCellValue(0, spalte, key)
-            myRaster.SetCellFont(0, spalte, wx.Font(16, wx.ROMAN, wx.NORMAL, wx.BOLD))
-            myRaster.SetCellBackgroundColour(0, spalte, wx.LIGHT_GREY)
+        for key in data:
+            self.SetCellValue(0, spalte, key)
+            self.SetCellFont(0, spalte, wx.Font(16, wx.ROMAN, wx.NORMAL, wx.BOLD))
+            self.SetCellBackgroundColour(0, spalte, wx.LIGHT_GREY)
             spalte = spalte + 1
 
         '''Zeilen füllen'''
@@ -59,14 +60,14 @@ class MyGrid(wx.grid.Grid):
         for key in new_dict_template:
             x = 2
             for value in new_dict_template[key]:
-                myRaster.SetCellValue(x, y, value)
-                myRaster.SetCellFont(x, y, wx.Font(14, wx.ROMAN, wx.NORMAL, wx.NORMAL))
+                self.SetCellValue(x, y, value)
+                self.SetCellFont(x, y, wx.Font(14, wx.ROMAN, wx.NORMAL, wx.NORMAL))
                 x = x + 1
             y = y + 1
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(myRaster)
-        panel.SetSizer(sizer)
+        sizer.Add(self)
+        self.SetSizer(sizer)
 
 
 
@@ -241,7 +242,6 @@ wanted = "Test"
 #plot_matplot(new_cells)
 
 new_template_cells, new_dict_template = gettemplate()
-print(new_dict_template)
 #for cell in new_template_cells:
     #if cell.sheet == "1998-2002":
         #print(cell.value)
@@ -252,7 +252,7 @@ print(new_dict_template)
     #break
 
 app = wx.App()
-frame = Fenster(title="Fenster", new_dict_template)
+frame = Fenster(None, "Fenster", new_dict_template)
 frame.Show()
 app.MainLoop()
 
