@@ -72,6 +72,14 @@ class MyGrid(wx.grid.Grid):                 # verwendet Template-Dictionary new_
         sizer.Add(self)
         self.SetSizer(sizer)
 
+        self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.select_cell)
+
+    def select_cell(self, event):
+        print(new_template_cells[(event.GetCol()+1, event.GetRow())].value)
+        print(event.GetCol(), event.GetRow())
+        print(new_template_cells)
+        pass
+
 
 
 class Template_Cell:
@@ -108,7 +116,7 @@ class Cell:
 def gettemplate():
     file_location = "/Users/mzichert/Documents/FilesforFE/Haushaltsbücher_MPI_Template.xlsx"
     wb = load_workbook(file_location, data_only=True)
-    template_cells = []
+    template_cells = {}     # key = (zeile, spalt); value = Template_Cell obj
     dict_template = defaultdict(list)
     for sheet in range(len(wb.sheetnames)):
         if wb.sheetnames[sheet] != "Synthese":
@@ -119,7 +127,7 @@ def gettemplate():
                 if not inhalt.value:
                     continue
                 else:
-                    template_cells.append(Template_Cell(zeile, spalte, inhalt.value, getattr(inhalt.fill.fgColor, inhalt.fill.fgColor.type), wb.sheetnames[sheet]))
+                    template_cells[(spalte, zeile)] = Template_Cell(zeile, spalte, inhalt.value, getattr(inhalt.fill.fgColor, inhalt.fill.fgColor.type), wb.sheetnames[sheet])
                     dict_template[wb.sheetnames[sheet]].append(inhalt.value)
     return template_cells, dict_template
 
@@ -255,6 +263,8 @@ new_template_cells, new_dict_template = gettemplate()
     #break
 
 app = wx.App()
+print(new_dict_template)
+print(new_template_cells)
 frame = Fenster(None, "Fenster")
 frame.Show()
 app.MainLoop()
