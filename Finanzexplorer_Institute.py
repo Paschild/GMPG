@@ -1719,7 +1719,7 @@ def get_inflation_indices():
 
 
 # create a directory 'Saves' next to the Platypus-file ( hopefully ;) )
-os.makedirs("../../../Saves", exist_ok=True)
+os.makedirs("../Saves", exist_ok=True)
 
 app = wx.App(False)
 frame = InstitutsForm()

@@ -25,11 +25,9 @@ class Fenster(wx.Frame):
         self.Show()
 
 
-
-
-
     def bei_Click(self, event):
         self.Close()
+
 
 class MyGrid(wx.grid.Grid):
     def __init__(self, parent):

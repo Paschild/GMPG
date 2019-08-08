@@ -11,7 +11,7 @@ istodersoll_text = ""
 
 
 class Fenster(wx.Frame):
-    def __init__(self, parent, title, data):
+    def __init__(self, parent, title):
         '''Constructor, der das Fenster erzeugt'''
         # wx.Frame.__init__(self, parent=None, title = "Fenster", size=(1000, 700))
         super(Fenster, self).__init__(parent, title=title, size=(800, 800))
@@ -20,14 +20,13 @@ class Fenster(wx.Frame):
         panel.SetBackgroundColour("gray")
         box = wx.BoxSizer(wx.VERTICAL)
 
-        print(data)
         self.label = wx.StaticText(panel, label="Übersicht", style=wx.ALIGN_CENTER)
         box.Add(self.label, 0, wx.EXPAND | wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 15)
 
         self.button = wx.Button(panel, 0, label="Close", )
         self.button.Bind(wx.EVT_BUTTON, self.bei_Click)
 
-        self.myGrid = MyGrid(panel, data)
+        self.myGrid = MyGrid(panel)       # ruft Grid-Klasse
         box.Add(self.myGrid)
 
         panel.SetSizer(box)
@@ -37,20 +36,20 @@ class Fenster(wx.Frame):
     def bei_Click(self, event):
         self.Close()
 
-class MyGrid(wx.grid.Grid):
-    def __init__(self, parent, data):
+class MyGrid(wx.grid.Grid):                 # verwendet Template-Dictionary new_dict_template
+    def __init__(self, parent):
         wx.grid.Grid.__init__(self, parent)
 
         self.parent = parent
-        self.CreateGrid(150, 10)
-        self.EnableEditing(False)
-
+        self.CreateGrid(135, 10)            # erzeugt Grid und legt Größe fest
+        self.EnableEditing(False)           # deaktiviert Bearbeitung
         self.Show()
+
 
         '''Überschriften'''
         spalte = 0
-        for key in data:
-            self.SetCellValue(0, spalte, key)
+        for key in new_dict_template:
+            self.SetColLabelValue(spalte, key)
             self.SetCellFont(0, spalte, wx.Font(16, wx.ROMAN, wx.NORMAL, wx.BOLD))
             self.SetCellBackgroundColour(0, spalte, wx.LIGHT_GREY)
             spalte = spalte + 1
@@ -64,6 +63,10 @@ class MyGrid(wx.grid.Grid):
                 self.SetCellFont(x, y, wx.Font(14, wx.ROMAN, wx.NORMAL, wx.NORMAL))
                 x = x + 1
             y = y + 1
+
+        for i in range(10):                 # legt Größe der Spalten fest
+            self.SetColSize(i, 240)
+        self.SetRowLabelSize(0)             # versteckt Label-Zeile ganz links
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self)
@@ -252,7 +255,7 @@ new_template_cells, new_dict_template = gettemplate()
     #break
 
 app = wx.App()
-frame = Fenster(None, "Fenster", new_dict_template)
+frame = Fenster(None, "Fenster")
 frame.Show()
 app.MainLoop()
 

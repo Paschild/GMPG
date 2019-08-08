@@ -1,87 +1,54 @@
 from openpyxl import load_workbook
 import matplotlib.pyplot as plt
 import wx
-import wx.grid
-from collections import defaultdict
 
 global istodersoll
-istodersoll = 1
+istodersoll = 0
 global istodersoll_text
 istodersoll_text = ""
 
-
-class Fenster(wx.Frame):
+class AuswahlBox(wx.Frame):
     def __init__(self, parent, title):
-        '''Constructor, der das Fenster erzeugt'''
-        # wx.Frame.__init__(self, parent=None, title = "Fenster", size=(1000, 700))
-        super(Fenster, self).__init__(parent, title=title, size=(800, 800))
+        super(AuswahlBox, self).__init__(parent, title=title, size=(250, 200))
 
-        panel = wx.Panel(self, size=(800, 700))
-        panel.SetBackgroundColour("gray")
+        panel = wx.Panel(self)
         box = wx.BoxSizer(wx.VERTICAL)
+        auswahl = ["Auswahl treffen", "IST", "SOLL"]
 
-        self.label = wx.StaticText(panel, label="Übersicht", style=wx.ALIGN_CENTER)
+        self.label = wx.StaticText(panel, label="IST oder SOLL?", style=wx.ALIGN_CENTER)
         box.Add(self.label, 0, wx.EXPAND | wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 15)
 
-        self.button = wx.Button(panel, 0, label="Close", )
+        self.combo = wx.ComboBox(panel, choices=auswahl)
+        box.Add(self.combo, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 20)
+        self.combo.Bind(wx.EVT_COMBOBOX, self.bei_Auswahl)
+
+        self.button = wx.Button(panel, label="Okay", style=wx.ALIGN_CENTER_HORIZONTAL)
+        box.Add(self.button, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 20)
         self.button.Bind(wx.EVT_BUTTON, self.bei_Click)
 
-        self.myGrid = MyGrid(panel)       # ruft Grid-Klasse
-        box.Add(self.myGrid)
 
         panel.SetSizer(box)
-        self.Centre()
+        self.Center()
         self.Show()
+
+    def bei_Auswahl(self, event):
+        global istodersoll
+        global istodersoll_text
+        if self.combo.GetValue() == "IST":
+            self.label.SetLabel("Es wurde " + self.combo.GetValue() + " ausgewählt")
+            istodersoll = 1
+            istodersoll_text = " (IST-Werte)"
+        elif self.combo.GetValue() == "SOLL":
+            self.label.SetLabel("Es wurde " + self.combo.GetValue() + " ausgewählt")
+            istodersoll = 2
+            istodersoll_text = " (SOLL-Werte)"
+        else:
+            self.label.SetLabel("Bitte IST oder SOLL auswählen")
+            istodersoll = 0
+            print("Bitte IST oder SOLL auswählen")
 
     def bei_Click(self, event):
         self.Close()
-
-class MyGrid(wx.grid.Grid):                 # verwendet Template-Dictionary new_dict_template
-    def __init__(self, parent):
-        wx.grid.Grid.__init__(self, parent)
-
-        self.parent = parent
-        self.CreateGrid(135, 10)            # erzeugt Grid und legt Größe fest
-        self.EnableEditing(False)           # deaktiviert Bearbeitung
-        self.Show()
-
-
-        '''Überschriften'''
-        spalte = 0
-        for key in new_dict_template:
-            self.SetColLabelValue(spalte, key)
-            self.SetCellFont(0, spalte, wx.Font(16, wx.ROMAN, wx.NORMAL, wx.BOLD))
-            self.SetCellBackgroundColour(0, spalte, wx.LIGHT_GREY)
-            spalte = spalte + 1
-
-        '''Zeilen füllen'''
-        y = 0
-        for key in new_dict_template:
-            x = 2
-            for value in new_dict_template[key]:
-                self.SetCellValue(x, y, value)
-                self.SetCellFont(x, y, wx.Font(14, wx.ROMAN, wx.NORMAL, wx.NORMAL))
-                x = x + 1
-            y = y + 1
-
-        for i in range(10):                 # legt Größe der Spalten fest
-            self.SetColSize(i, 240)
-        self.SetRowLabelSize(0)             # versteckt Label-Zeile ganz links
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self)
-        self.SetSizer(sizer)
-
-
-
-class Template_Cell:
-    def __init__(self, row, column, value, color, sheet):
-        self.row = row
-        self.column = column
-        self.value = value
-        self.color = color
-        self.sheet = sheet
-        #self.konzepte = konzepte           #später kommt noch self.konzepte dazu
 
 
 class Cell:
@@ -105,23 +72,9 @@ class Cell:
         print("Wert: " + str(self.value))
 
 
-def gettemplate():
-    file_location = "/Users/mzichert/Documents/FilesforFE/Haushaltsbücher_MPI_Template.xlsx"
-    wb = load_workbook(file_location, data_only=True)
-    template_cells = []
-    dict_template = defaultdict(list)
-    for sheet in range(len(wb.sheetnames)):
-        if wb.sheetnames[sheet] != "Synthese":
-            wb.active = sheet
-            spalte = 1
-            for zeile in range(10, 200):
-                inhalt = wb.active.cell(row = zeile, column = spalte)
-                if not inhalt.value:
-                    continue
-                else:
-                    template_cells.append(Template_Cell(zeile, spalte, inhalt.value, getattr(inhalt.fill.fgColor, inhalt.fill.fgColor.type), wb.sheetnames[sheet]))
-                    dict_template[wb.sheetnames[sheet]].append(inhalt.value)
-    return template_cells, dict_template
+def gen_years():
+    for x in range(1954, 2003):
+        yield x
 
 
 def getdata(wanted):
@@ -217,11 +170,6 @@ def getdata(wanted):
     return cells
 
 
-def gen_years():
-    for x in range(1954, 2003):
-        yield x
-
-
 def plot_matplot(new_cells):
     years = []
     data = []
@@ -237,28 +185,17 @@ def plot_matplot(new_cells):
     plt.show()
 
 
-filename = "/Users/mzichert/Documents/FilesforFE/Haushaltsbücher_MPG_Test.xlsx"
+filename = "..FilesforFE/Haushaltsbücher_MPG_Test.xlsx"
 wanted = "Test"
 
 
-#new_cells = getdata(wanted)
-#plot_matplot(new_cells)
-
-new_template_cells, new_dict_template = gettemplate()
-#for cell in new_template_cells:
-    #if cell.sheet == "1998-2002":
-        #print(cell.value)
-
-
-#for cell in new_cells:
-    #cell.ausgabe()
-    #break
-
 app = wx.App()
-frame = Fenster(None, "Fenster")
-frame.Show()
+AuswahlBox(None, 'Auswahlmenü')
 app.MainLoop()
 
+new_cells = getdata(wanted)
+plot_matplot(new_cells)
 
-
-
+for cell in new_cells:
+    cell.ausgabe()
+    break

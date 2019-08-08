@@ -185,7 +185,7 @@ def plot_matplot(new_cells):
     plt.show()
 
 
-filename = "/Haushaltsbücher_MPG_Test.xlsx"
+filename = "..FilesforFE/Haushaltsbücher_MPG_Test.xlsx"
 wanted = "Test"
 
 
