@@ -20,6 +20,7 @@ Eine Übersicht über alle wx.Python widgets findet sich unter folgendem Link:
 https://wxpython.org/Phoenix/docs/html/gallery.html
 '''
 
+' Git-Test'
 
 WHITE = "#ffffff"           # für das Interface (wx.grid)
 active_konzeptColor = "#ffffff"     # active bedeutet, dieses Konzept ist angewählt
@@ -384,6 +385,8 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
 
         self.Show()
 
+                                #
+
     def on_mouse_over(self, event):
         """
         Displays a tooltip over any cell in a certain column
@@ -607,17 +610,14 @@ class InstitutsForm(wx.Frame):
         self.konzept_listcontrol = wx.ListCtrl(self.p, size=(155, 100),
                                                style=wx.LC_REPORT | wx.BORDER_SUNKEN | wx.LC_SINGLE_SEL)
 
-        self.konzept_listcontrol.InsertColumn(0, 'Konzeptname')
-        # self.konzept_listcontrol.InsertColumn(1, 'Farbe')
-
-        # self.statusbar = self.CreateStatusBar(1)
+        self.konzept_listcontrol.InsertColumn(0, 'Konzeptname') # Function (an dieser Stelle, da direkt zu listkontroll
 
         self.static_text_02 = wx.StaticText(self.p, -1, "Institutes:")
         self.checkbox_sum = wx.CheckBox(self.p, -1, label="Sum institutes")
 
         self.institute = defaultdict(dict)
 
-        self.set_institutes()
+        self.set_institutes()   # Function
         self.choices_files = [x for x in get_saves().keys()]
         self.choices = [x for x in self.get_institutes().keys()]
         self.choices.sort()
