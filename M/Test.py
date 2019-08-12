@@ -57,7 +57,7 @@ class MyGrid(wx.grid.Grid):                 # verwendet Template-Dictionary new_
         '''Zeilen füllen'''
         y = 0
         for key in new_dict_template:
-            x = 2
+            x = 1
             for value in new_dict_template[key]:
                 self.SetCellValue(x, y, value)
                 self.SetCellFont(x, y, wx.Font(14, wx.ROMAN, wx.NORMAL, wx.NORMAL))
@@ -72,13 +72,12 @@ class MyGrid(wx.grid.Grid):                 # verwendet Template-Dictionary new_
         sizer.Add(self)
         self.SetSizer(sizer)
 
-        self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.select_cell)
+        self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.select_cell)      # ruft Select-Cell Funktion auf
 
     def select_cell(self, event):
-        print(new_template_cells[(event.GetCol()+1, event.GetRow())].value)
-        print(event.GetCol(), event.GetRow())
-        print(new_template_cells)
-        pass
+        print(new_template_cells[(event.GetCol() + 1, event.GetRow())].value)
+        print(str(new_template_cells[(event.GetCol() + 1, event.GetRow())].sheet) + ", Zeile: " +  str(new_template_cells[(event.GetCol() + 1, event.GetRow())].row) + ", Spalte: " + str(new_template_cells[(event.GetCol() + 1, event.GetRow())].column))
+
 
 
 
@@ -116,19 +115,21 @@ class Cell:
 def gettemplate():
     file_location = "/Users/mzichert/Documents/FilesforFE/Haushaltsbücher_MPI_Template.xlsx"
     wb = load_workbook(file_location, data_only=True)
-    template_cells = {}     # key = (zeile, spalt); value = Template_Cell obj
+    template_cells = {}     # key = (zeile, spalte); value = Template_Cell obj
     dict_template = defaultdict(list)
+    spalte = 1
+    new_spalte = 1
     for sheet in range(len(wb.sheetnames)):
         if wb.sheetnames[sheet] != "Synthese":
             wb.active = sheet
-            spalte = 1
             for zeile in range(10, 200):
                 inhalt = wb.active.cell(row = zeile, column = spalte)
                 if not inhalt.value:
                     continue
                 else:
-                    template_cells[(spalte, zeile)] = Template_Cell(zeile, spalte, inhalt.value, getattr(inhalt.fill.fgColor, inhalt.fill.fgColor.type), wb.sheetnames[sheet])
-                    dict_template[wb.sheetnames[sheet]].append(inhalt.value)
+                template_cells[(new_spalte, zeile)] = Template_Cell(zeile, new_spalte, inhalt.value, getattr(inhalt.fill.fgColor, inhalt.fill.fgColor.type), wb.sheetnames[sheet])
+                dict_template[wb.sheetnames[sheet]].append(inhalt.value)
+        new_spalte += 1
     return template_cells, dict_template
 
 
@@ -253,6 +254,7 @@ wanted = "Test"
 #plot_matplot(new_cells)
 
 new_template_cells, new_dict_template = gettemplate()
+print(new_template_cells)
 #for cell in new_template_cells:
     #if cell.sheet == "1998-2002":
         #print(cell.value)
@@ -263,8 +265,6 @@ new_template_cells, new_dict_template = gettemplate()
     #break
 
 app = wx.App()
-print(new_dict_template)
-print(new_template_cells)
 frame = Fenster(None, "Fenster")
 frame.Show()
 app.MainLoop()
