@@ -179,7 +179,7 @@ def get_dct_cells():
     return dct_cells
 
 
-def populate_cells():       # Class Cells vielleicht lieber im View, da hauptsächlich (nur?!) dort genutzt
+def populate_cells():
     col = -1
     for year in range(1948, 2006):
         for schema in dct_Schemata.values():

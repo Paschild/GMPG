@@ -157,8 +157,8 @@ class ExcelCell:
         self.path = path
         self.sheet = sheet
         self.year = year
-        self.type = typ         # IST oder SOLL
-        self.category = category     # Gesamteinnahmen
+        self.type = typ         # z.B.: IST oder SOLL
+        self.category = category     # z.B.: Gesamteinnahmen    (noch str, besser FK)
 
         # ab diesem Zeitpunkt sind die Werte in den Haushaltsplänen in TDM angegeben
         if (self.year > 1965 and self.type == "IST") or (self.year > 1966 and self.type == "SOLL"):
@@ -366,9 +366,9 @@ class DialogNewKonzept(wx.Dialog):
 
 class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, um mit den Grids in wxPython umzugehen.
                             # http://www.blog.pythonlibrary.org/2010/04/04/wxpython-grid-tips-and-tricks/
-    def __init__(self, parent):
+    def __init__(self, parent): # durch die erste __init__ wird nichts mehr vom parent (wx.grid.Grid) geerbt.
         """Constructor"""
-        wx.grid.Grid.__init__(self, parent)
+        wx.grid.Grid.__init__(self, parent) # um es dennoch zu erben, muss die __init__ des parents aufgerufen werden
         self.parent = parent
         self.CreateGrid(200, 58)
         # self.SetRowSize(0, 60)
@@ -911,9 +911,16 @@ class InstitutsForm(wx.Frame):
 
             # get existing concepts
             dct_xkonzepte = defaultdict(dict)
+            tmp_xkonzepte = defaultdict(list)
             for c in dct_cells.values():
                 if c.konzept:
-                    dct_xkonzepte[worksheets[c.col]][c.konzept.name] = c.value
+                    tmp_xkonzepte[(worksheets[c.col], c.konzept.name)].append(c.value)
+
+            for sheet_konzeptname, lst in tmp_xkonzepte.items():
+                dct_xkonzepte[sheet_konzeptname[0]][sheet_konzeptname[1]] = lst
+                # worksheets = ["1954-1963", "1964-1966", "1967", "1968-1972", "1973-1986", "1987-1997", "1998-2002"]
+                # c.col = Spalte im interface = index aus der Liste 'worksheets'
+                # dct_xkonzepte{"1954-1963": {Konzeptname:[list of ]}}
 
             # get data according to the selected institutes AND existing concepts
 
@@ -927,24 +934,27 @@ class InstitutsForm(wx.Frame):
                         ws = wb[sheet]       # exp. Worksheet "1954-1963"
 
                         # get data (sheet by sheet) for each concept and store it in a list (each konzept has one list)
-                        for konzeptname, v in dct_xkonzepte[sheet].items():
+                        for konzeptname, conceptcells_per_year in dct_xkonzepte[sheet].items():
                             for row in range(1, ws.max_row+1):
-                                if ws.cell(row, 1).value == v:
-                                    for col in range(1, ws.max_column+1):
-                                        if ws.cell(3, col).value and ws.cell(row, col).value not in ["", " ", None,
-                                                                                                     "None", "0", 0]:
-                                            if sheet == "1998-2002" and col > 12:   # €-Werte
-                                                pass
-                                            else:
-                                                konzept_data[konzeptname].append(
-                                                    ExcelCell(row=row,
-                                                              col=col,
-                                                              path=path,
-                                                              sheet=sheet,
-                                                              year=int(ws.cell(3, col).value),
-                                                              typ=ws.cell(2, col).value,
-                                                              category=ws.cell(row, 1).value,
-                                                              betrag=float(ws.cell(row, col).value)))
+                                for v in conceptcells_per_year:
+                                    if ws.cell(row, 1).value == v:
+                                        # hier wird in die Excel gegangen und
+                                        # nach der ausgewählten Zelle aus dem Interface gesucht
+                                        for col in range(1, ws.max_column+1):
+                                            if ws.cell(3, col).value and ws.cell(row, col).value not in ["", " ", None,
+                                                                                                         "None", "0", 0]:
+                                                if sheet == "1998-2002" and col > 12:   # €-Werte
+                                                    pass
+                                                else:
+                                                    konzept_data[konzeptname].append(
+                                                        ExcelCell(row=row,
+                                                                  col=col,
+                                                                  path=path,
+                                                                  sheet=sheet,
+                                                                  year=int(ws.cell(3, col).value),
+                                                                  typ=ws.cell(2, col).value,
+                                                                  category=ws.cell(row, 1).value,
+                                                                  betrag=float(ws.cell(row, col).value)))
                     except KeyError:
                         print("{} doesn't has sheet {}".format(path[0], sheet))
                     except ValueError:
