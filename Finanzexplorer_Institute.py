@@ -14,6 +14,7 @@ from matplotlib import use
 use('WXAgg')
 import matplotlib.pyplot as plt
 from fpdf import FPDF
+import datetime
 
 '''
 Eine Übersicht über alle wx.Python widgets findet sich unter folgendem Link:
@@ -22,6 +23,7 @@ https://wxpython.org/Phoenix/docs/html/gallery.html
 
 ' Git-Test'
 
+develope_mode = False
 WHITE = "#ffffff"           # für das Interface (wx.grid)
 active_konzeptColor = "#ffffff"     # active bedeutet, dieses Konzept ist angewählt
 active_konzept = None
@@ -118,6 +120,7 @@ class PDFReport:
             for sheet, txt_kategorien in sheets.items():
                 self.pdf.cell(w=25, h=10, txt=str(sheet))
                 self.pdf.multi_cell(w=100, h=10, txt=txt_kategorien)
+
 
         if not toc:
             self.create_pdf(image=image, filename=filename, toc=True)
@@ -610,17 +613,15 @@ class InstitutsForm(wx.Frame):
         self.konzept_listcontrol = wx.ListCtrl(self.p, size=(155, 100),
                                                style=wx.LC_REPORT | wx.BORDER_SUNKEN | wx.LC_SINGLE_SEL)
 
-        self.konzept_listcontrol.InsertColumn(0, 'Konzeptname') # Function (an dieser Stelle, da direkt zu listkontroll
+        self.konzept_listcontrol.InsertColumn(0, 'Konzeptname', width=150)
 
         self.static_text_02 = wx.StaticText(self.p, -1, "Institutes:")
         self.checkbox_sum = wx.CheckBox(self.p, -1, label="Sum institutes")
 
         self.institute = defaultdict(dict)
-
-        self.set_institutes()   # Function
         self.choices_files = [x for x in get_saves().keys()]
-        self.choices = [x for x in self.get_institutes().keys()]
-        self.choices.sort()
+        self.choices = []
+
         self.checkbox = wx.CheckListBox(self.p, -1, size=(200, 1000),
                                         choices=[], style=wx.LB_ALWAYS_SB)
         self.checkbox.Bind(wx.EVT_CHECKLISTBOX, self.checked_item)
@@ -709,6 +710,7 @@ class InstitutsForm(wx.Frame):
 
         helpButton = wx.Menu()
         templateItem = helpButton.Append(-1, 'show Template')
+        developeItem = helpButton.Append(-1, 'develope mode')
         menuBar.Append(helpButton, 'help')
 
         self.SetMenuBar(menuBar)
@@ -720,17 +722,46 @@ class InstitutsForm(wx.Frame):
         self.Bind(wx.EVT_MENU, self.new_window, openInNewWindowItem)
         self.Bind(wx.EVT_MENU, self.create_report, create_report)
         self.Bind(wx.EVT_MENU, self.open_template, templateItem)
+        self.Bind(wx.EVT_MENU, self.develope_mode, developeItem)
+
+    def develope_mode(self, _):
+        """
+        If develope_mode True, docstrings will be printed on console.
+        """
+        global develope_mode
+        develope_mode = not develope_mode
 
     def Quit(self, _):
         self.Close()
 
     def open_template(self, _):
+        """
+        öffnet das Excel-Template, welches wir zum einen bei der Datenaufnahme aus den Haushaltsplänen
+        als Vorlage verwendet haben, zum anderen wurde anhand des Templates das Grid-Interface für die
+        Institute im Finanzexplorer erzeugt.
+
+        :param _: wx-event (not used)
+        """
         os.system('open Institute/Haushaltsbücher_MPI_Template.xlsx&')
 
     def new_window(self, _):
+        """
+        Öffnet den Finanzexplorer erneut, um zum Beispiel parallel an der Einnahmen-/Ausgabenrechnung und
+        der Vermögensübersicht arbeiten zu können.
+
+        :param _: wx-event (not used)
+        """
         os.system('venv/bin/python Finanzexplorer_Institute.py&')
 
     def set_interface_alert(self, _, typ):
+        """
+        Falls bereits ein Interface eines bestimmten Rechnungstyps geöffnet ist und nicht dem entspricht,
+        der gerade geöffnet werden soll, erscheint eine Warnung, dass noch ungespeicherte Konzepte verloren gehen.
+
+        :param _: wx-event (not used)
+        :param typ: Zur Unterscheidung von EA = Einnahmen-/Ausgabenrechnung, VÜ = Vermögensübersicht, INST = Institute
+        :return:
+        """
         if model.RECHNUNGSTYP == "":
             self.set_interface(_, typ)
         elif model.RECHNUNGSTYP == typ:
@@ -745,7 +776,14 @@ class InstitutsForm(wx.Frame):
                 pass
 
     def set_interface(self, _, typ):
-        # User-Interface for Einnahmen-/Ausgabenrechnung
+        """
+        wxFrame wird nach dem 'richtigen' Rechnungstyp ausgerichtet: wxWidgets werden neue Funktionen zugeteilt.
+
+        :param _: wx-event (not used)
+        :param typ: Zur Unterscheidung von EA = Einnahmen-/Ausgabenrechnung, VÜ = Vermögensübersicht, INST = Institute
+        :return:
+        """
+
         # erase old interface and data
         fresh_new_start()
         frame.reset_konzepte(_)
@@ -753,18 +791,28 @@ class InstitutsForm(wx.Frame):
         # set new interface and data
         model.RECHNUNGSTYP = typ
 
-        if model.RECHNUNGSTYP == "EA":
+        if model.RECHNUNGSTYP == "EA":      # User-Interface for Einnahmen-/Ausgabenrechnung
             model.superkategorien = [68, 92]
             frame.SetTitle("Finanzexplorer - MPG Gesamt - Einnahmen-/ Ausgabenrechnung")
-        elif model.RECHNUNGSTYP == "VÜ":
+        elif model.RECHNUNGSTYP == "VÜ":    # User-Interface for Vermögensübersicht
             model.superkategorien = [1, 2]
             frame.SetTitle("Finanzexplorer - MPG Gesamt - Vermögensübersicht")
 
+        # Superkategorien sind die 'Wurzeln' des Schema-Baums in EA und VÜ.
+        # Also den Kategorien "Einnahmen", "Ausgaben", "Aktiva" und "Passiva".
+        # Die Zahlen entsprechen den Kategorie-IDs in der Finanz-DB.
+
         if model.RECHNUNGSTYP == "INST":
             frame.SetTitle("Finanzexplorer - MPG Institute")
+
             self.checkbox_sum.SetLabel("Sum institutes")
+            self.set_institutes()
+            self.choices = [x for x in self.get_institutes().keys()]
+            self.choices.sort()
+
             self.checkbox.Set(self.choices)
             import_inst_template()
+
             # Bindings for "INST"
             self.button.Bind(wx.EVT_BUTTON, self.button_click)
             self.myGrid.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.myGrid.select_cell)
@@ -773,7 +821,7 @@ class InstitutsForm(wx.Frame):
             self.sizer_controller.Show(self.checkbox_sum)
             self.sizer_controller.Layout()
 
-        else:
+        else:   # for "EA" or "VÜ"
             self.checkbox.Set([])
 
             self.choices_files = [x for x in get_saves().keys()]
@@ -802,7 +850,15 @@ class InstitutsForm(wx.Frame):
         self.btn_save.Bind(wx.EVT_BUTTON, self.save_konzepte)
 
     def set_institutes(self):
-        for (dirpath, dirnames, filenames) in os.walk("../Institute"):
+        """
+        Liest die Namen und Pfade aller relevanten Excel-Dateien aus dem Ordner 'Institute' ein und
+        speichert sie im dict self.institute unter dem Key des Institutsnamens. Nested dict 'path' and 'file'
+        :return:
+        """
+        if develope_mode:
+            print(help(self.set_institutes))
+
+        for (dirpath, dirnames, filenames) in os.walk("../Finanzexplorer-Git-data/Institute"):
             filenames = [x for x in filenames
                          if "Haushaltsb" in x
                          and ".xlsx" in x
@@ -901,6 +957,7 @@ class InstitutsForm(wx.Frame):
             active_konzeptColor = WHITE
 
     def get_inst_konzepte(self):
+        # print(get_inst_konzepte().__name__)
         if self.tmpStoredKonzepte:      # spart Zeit, da nicht erneut die Excel-Tabellen geöffnet werden müssen
             all_konzept_data = self.tmpStoredKonzepte
         else:
@@ -920,7 +977,7 @@ class InstitutsForm(wx.Frame):
                 dct_xkonzepte[sheet_konzeptname[0]][sheet_konzeptname[1]] = lst
                 # worksheets = ["1954-1963", "1964-1966", "1967", "1968-1972", "1973-1986", "1987-1997", "1998-2002"]
                 # c.col = Spalte im interface = index aus der Liste 'worksheets'
-                # dct_xkonzepte{"1954-1963": {Konzeptname:[list of ]}}
+                # dct_xkonzepte{"1954-1963": {Konzeptname:[list of selected cells per year]}}
 
             # get data according to the selected institutes AND existing concepts
 
@@ -1531,7 +1588,7 @@ def line_plot_gesamt(dct_konzepte, mode, xshow=True):
 
 
 def import_inst_template():
-    wb = load_workbook("../Institute/Haushaltsbücher_MPI_Template.xlsx", data_only=True)
+    wb = load_workbook("../Finanzexplorer-Git-data/Institute/Haushaltsbücher_MPI_Template.xlsx", data_only=True)
     grid_col = 0
     for s in range(len(wb.sheetnames)):
         if wb.sheetnames[s] == "1954-1963":             # Sonderregel für dieses Sheet,
@@ -1714,7 +1771,7 @@ def get_limits(data, typ):
 def get_inflation_indices():
     dct_preisindices = {}
 
-    wb = load_workbook("verbraucherpreisindex-lange-reihen-xlsx-5611103.xlsx", data_only=True)
+    wb = load_workbook("../Finanzexplorer-Git-data/verbraucherpreisindex-lange-reihen-xlsx-5611103.xlsx", data_only=True)
     ws = wb["JD_Index"]
 
     for row in range(6, 49):

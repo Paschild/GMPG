@@ -126,20 +126,20 @@ def import_csv(filename, sep=","):
 
 def import_kategorien():
     global dct_Kategorien
-    for x in import_csv("Finanz_ID-Kategorie"):
+    for x in import_csv("../Finanzexplorer-Git-data/Finanz_ID-Kategorie"):
         dct_Kategorien[int(x[0])] = Kategorie(x)
 
 
 def import_posten():
     global dct_Posten
-    for x in import_csv("Finanz_Posten-Jahr-Betrag"):   # http://gmpg-intern.mpiwg-berlin.mpg.de:8888/explorer/525/
+    for x in import_csv("../Finanzexplorer-Git-data/Finanz_Posten-Jahr-Betrag"):   # http://gmpg-intern.mpiwg-berlin.mpg.de:8888/explorer/525/
         dct_Posten[(int(x[0]), int(x[3]))] = Posten(x)  # dict_key: (Kat_id, year)
 
 
 def import_kategorierelations():
     global dct_categorierelations
     lst_categorierelations = []
-    for x in import_csv("Finanz_Kategorie_Relation"):   # http://gmpg-intern.mpiwg-berlin.mpg.de:8888/explorer/526/
+    for x in import_csv("../Finanzexplorer-Git-data/Finanz_Kategorie_Relation"):   # http://gmpg-intern.mpiwg-berlin.mpg.de:8888/explorer/526/
         if x[5]:
             x[5] = int(x[5].split(".")[0])
         else:
@@ -153,7 +153,7 @@ def import_kategorierelations():
 
 def import_schemata():
     global dct_Schemata
-    for x in import_csv("Finanz_ID-Schema"):
+    for x in import_csv("../Finanzexplorer-Git-data/Finanz_ID-Schema"):
         # um nur die Daten zu laden, die auch dem gewählten Rechnungstypen entsprechen
         if x[1].split("_")[1] == RECHNUNGSTYP:
             dct_Schemata[int(x[0])] = Schema(x)
