@@ -15,6 +15,8 @@ use('WXAgg')
 import matplotlib.pyplot as plt
 from fpdf import FPDF
 import datetime
+import locale
+locale.setlocale(locale.LC_ALL, 'de_DE')
 
 '''
 Eine Übersicht über alle wx.Python widgets findet sich unter folgendem Link:
@@ -38,98 +40,24 @@ dct_cells = {}
 found_cells = []    # für die Suchfunktion
 
 
-class PDFReport:
-    def __init__(self):
-        self.titel = None
-        self.konzepte = defaultdict(dict)
-        self.pdf = FPDF()
-        self.inhaltsverzeichnis = {}
+class PDF(FPDF):
+    def header(self):
+        self.set_font("Times", "B", 10)
+        self.image("Icon.png", 10, 8, 8)
+        self.cell(80)
+        self.cell(30, 10, frame.GetTitle(), 0, 1, 'C')
+        self.ln(15)
 
-    def create_content_table(self):
-        self.pdf = FPDF()
-        self.pdf.add_page()
-        self.pdf.set_font('Times', 'B', 12)
-        self.pdf.cell(w=200, h=12, txt="Inhaltsverzeichnis", ln=2)
-        self.pdf.set_font('Times', size=10)
+    def footer(self):
+        today = datetime.date.today()
+        self.set_y(-15)
+        self.set_font("Times", 'I', 8)
+        self.cell(0, 10, str(today), 0, 0, 'C')
 
-        self.pdf.cell(w=20, h=10, txt=" - ")
-        link = self.pdf.add_link()
-        self.pdf.set_link(link, page=2)
-        self.pdf.cell(w=100, h=10, txt="Diagramm", link=link, ln=1)
-
-        for konzeptname, page in self.inhaltsverzeichnis.items():
-            self.pdf.cell(w=20, h=10, txt=" - ")
-            link = self.pdf.add_link()
-            self.pdf.set_link(link, page=page + 1)
-            self.pdf.cell(w=100, h=10, txt=konzeptname, link=link, ln=1)
-        return
-
-    def create_content(self):
-        for konzeptname, konzeptobjekt in frame.konzepte.items():
-            kategorien = []
-            sorted_lst_cells = sorted(konzeptobjekt.cells, key=itemgetter(1))
-
-            for konzeptcell in sorted_lst_cells:
-                if model.RECHNUNGSTYP == "INST":
-                    kategorien.append((dct_cells[konzeptcell].value, konzeptcell))
-                else:
-                    kategorien.append((model.get_dct_cells()[konzeptcell].value, konzeptcell))
-            if model.RECHNUNGSTYP == "INST":
-                years = worksheets
-            else:
-                years = range(1948, 2006)
-
-            for i, sheet in enumerate(years):
-                xkategorien = []
-                for kat in kategorien:
-                    if kat[1][1] == i:
-                        if model.RECHNUNGSTYP == "INST":
-                            xkategorien.append(kat[0])
-                        else:
-                            if kat[0][0].spezifizierung:
-                                xkategorien.append(kat[0][0].bezeichnung + " (" + kat[0][0].spezifizierung + ")")
-                            else:
-                                xkategorien.append(kat[0][0].bezeichnung)
-                txt_kategorien = " \n".join(xkategorien)
-                txt_kategorien = txt_kategorien.replace('–', '-')
-                txt_kategorien = txt_kategorien.replace("\u0308", "_")
-
-                self.konzepte[konzeptname][sheet] = txt_kategorien
-        return
-
-    def create_pdf(self, image, filename="Test", toc=False):   # toc = Table of Content
-        if toc:
-            self.create_content_table()
-
-        self.pdf.set_font('Times', size=10)
-
-        # Grafiken:
-        self.pdf.add_page()
-        self.pdf.image(image, w=200, h=150)
-
-        for konzeptname, sheets in self.konzepte.items():
-            self.pdf.add_page()
-            self.pdf.set_font('Times', 'B', 12)
-            self.pdf.cell(w=50, h=12, txt="", ln=1)
-            self.pdf.cell(w=50, h=12, txt=konzeptname, ln=1)
-            self.pdf.set_font('Times', size=10)
-
-            if not toc:
-                self.inhaltsverzeichnis[konzeptname] = self.pdf.page_no()
-
-            for sheet, txt_kategorien in sheets.items():
-                self.pdf.cell(w=25, h=10, txt=str(sheet))
-                self.pdf.multi_cell(w=100, h=10, txt=txt_kategorien)
-
-
-        if not toc:
-            self.create_pdf(image=image, filename=filename, toc=True)
-            # alte pdf wird überschrieben.
-            # Nur Seitenzahlen bleiben in self.inhaltsverzeichnis gespeichert
-        else:
-            self.pdf.output(filename + '.pdf', 'F')
-            os.system('open toc_test.pdf&')
-        return
+        self.set_y(-15)
+        link = self.add_link()
+        self.set_link(link, page=1)
+        self.cell(0, 10, "top", 0, 0, 'R', link=link)
 
 
 class Konzept:
@@ -1225,17 +1153,114 @@ class InstitutsForm(wx.Frame):
         found_cells = []
         self.myGrid.ForceRefresh()
 
-    def create_report(self, _):
+    def create_report(self, _, filename="Test"):
         if model.RECHNUNGSTYP == "INST":
             image = self.plot_settings(xshow=False)
         else:
             image = line_plot_gesamt(frame.new_get_konzept(), mode=0, xshow=False)
 
-        myPDF = PDFReport()
-        myPDF.create_content()
-        # myPDF.create_pdf(image=image)
-        myPDF.create_pdf(filename="toc_test", image=image)
-        return
+        myPDF = PDF()
+        report_konzepte = defaultdict(dict)
+        inhaltsverzeichnis = {}
+        for konzeptname, konzeptobjekt in frame.konzepte.items():
+            kategorien = []
+            sorted_lst_cells = sorted(konzeptobjekt.cells, key=itemgetter(1))
+
+            for konzeptcell in sorted_lst_cells:
+                if model.RECHNUNGSTYP == "INST":
+                    kategorien.append((dct_cells[konzeptcell].value, konzeptcell))
+                else:
+                    kategorien.append((model.get_dct_cells()[konzeptcell].value, konzeptcell, model.get_dct_cells()[konzeptcell].posten))
+            if model.RECHNUNGSTYP == "INST":
+                years = worksheets
+            else:
+                years = range(1948, 2006)
+
+
+
+            for i, sheet in enumerate(years):
+                xkategorien = []
+                for kat in kategorien:
+                    if kat[1][1] == i:
+                        if model.RECHNUNGSTYP == "INST":
+                            xkategorien.append(kat[0])
+                        else:
+                            if kat[0][0].spezifizierung:
+                                xkategorien.append([kat[0][0].bezeichnung + " (" + kat[0][0].spezifizierung + "): ",
+                                                   str(round(kat[2].geldbetrag, 2))])
+                            else:
+                                xkategorien.append([kat[0][0].bezeichnung + ": ", str(round(kat[2].geldbetrag, 2))])
+
+                for item in xkategorien:
+                    for i, x in enumerate(item):
+                        item[i] = x.replace('–', '-')
+                        item[i] = x.replace("\u0308", "_")
+
+                report_konzepte[konzeptname][sheet] = xkategorien
+
+        for toc in [False, True]:
+            if toc:
+                # myPDF.close()
+                myPDF = PDF()
+                myPDF.add_page()
+                myPDF.set_font('Times', 'B', 12)
+                myPDF.cell(w=200, h=12, txt="Inhaltsverzeichnis", ln=2)
+                myPDF.set_font('Times', size=10)
+
+                myPDF.cell(w=20, h=10, txt=" - ")
+                link = myPDF.add_link()
+                myPDF.set_link(link, page=2)
+                myPDF.cell(w=100, h=10, txt="Diagramm", link=link, ln=1)
+
+                for konzeptname, page in inhaltsverzeichnis.items():
+                    myPDF.cell(w=20, h=10, txt=" - ")
+                    link = myPDF.add_link()
+                    myPDF.set_link(link, page=page + 1)
+                    myPDF.cell(w=100, h=10, txt=konzeptname, link=link, ln=1)
+
+            myPDF.set_font('Times', size=10)
+
+            # Grafiken
+            myPDF.add_page()
+            myPDF.image(image, w=200, h=150)
+
+            for konzeptname, sheets in report_konzepte.items():
+                myPDF.add_page()
+                myPDF.set_font('Times', 'B', 12)
+                myPDF.cell(w=50, h=12, txt="", ln=1)
+                myPDF.cell(w=10, h=12, txt="")
+                myPDF.cell(w=50, h=12, txt=konzeptname, ln=1)
+                myPDF.set_font('Times', size=8)
+                if not toc:
+                    inhaltsverzeichnis[konzeptname] = myPDF.page_no()
+
+                for sheet, txt in sheets.items():
+                    x, y = myPDF.get_x(), myPDF.get_y()
+                    myPDF.line(x + 20, y, x + 185, y)
+                    summe = 0
+                    for i, x in enumerate(txt):
+                        myPDF.cell(w=10, h=8, txt="")
+                        if i == 0:
+                            myPDF.cell(w=10, h=8, txt=str(sheet))
+                        else:
+                            myPDF.cell(w=10, h=8, txt="")
+                        y = myPDF.get_y()
+                        myPDF.multi_cell(w=140, h=8, txt=x[0])
+                        myPDF.set_xy(x=175, y=y)
+                        myPDF.multi_cell(w=50, h=8, txt=x[1])
+                        summe += float(x[1])
+                    if len(txt) > 1:
+                        x, y = myPDF.get_x(), myPDF.get_y()
+                        myPDF.line(x + 165, y, x + 180, y)
+                        myPDF.cell(w=10, h=8, txt="")
+                        myPDF.cell(w=10, h=8, txt="")
+                        myPDF.cell(w=145, h=8, txt="SUMME:")
+                        myPDF.cell(w=50, h=8, txt=str(round(summe, 2)), ln=1)
+
+            if toc:
+                myPDF.output(filename + '.pdf', 'F')
+                os.system('open Test.pdf&')
+        myPDF.close()
 
 
 def line_plot_inst(data, typ, grouping_by, mode, inflation, xshow=True):
