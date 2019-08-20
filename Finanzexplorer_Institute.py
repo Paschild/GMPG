@@ -356,7 +356,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
         item_03 = wx.MenuItem(menu, self.popupID3, "select whole category")
         item_04 = wx.MenuItem(menu, self.popupID4, "unselect whole Category")
         item_uncertain_cat = wx.MenuItem(menu, self.popupID5, "uncertain")
-        item_uncertain = wx.MenuItem(menu, self.popupID5, "uncertain")
+        item_uncertain = wx.MenuItem(menu, self.popupID6, "uncertain")
 
         sub_menu = wx.Menu()
         sub_menu.Append(item_02)
@@ -434,7 +434,8 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
                     active_konzept.uncertain.append((c.row, c.col))
                 else:
                     frame.myGrid.SetCellTextColour(c.row, c.col, "#000000")
-                    active_konzept.uncertain.remove((c.row, c.col))
+                    if (c.row, c.col) in active_konzept.uncertain:
+                        active_konzept.uncertain.remove((c.row, c.col))
         self.ForceRefresh()
 
     def set_cellvalue(self, cellpos, value):
