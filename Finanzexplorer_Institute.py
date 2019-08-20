@@ -43,10 +43,10 @@ found_cells = []    # für die Suchfunktion
 class PDF(FPDF):
     def header(self):
         self.set_font("Times", "B", 10)
-        self.image("Icon.png", 10, 8, 8)
+        # self.image("Icon.png", 10, 8, 8)
         self.cell(80)
         self.cell(30, 10, frame.GetTitle(), 0, 1, 'C')
-        self.ln(15)
+        self.ln(10)
 
     def footer(self):
         today = datetime.date.today()
@@ -70,6 +70,7 @@ class Konzept:
                             # Beim laden eines gespeicherten Konzepts werden diese Zellen in der Konzeptfarbe markiert
 
         self.plots = defaultdict(list)
+        self.uncertain = []
 
 
 class Cell:
@@ -297,9 +298,9 @@ class DialogNewKonzept(wx.Dialog):
 
 class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, um mit den Grids in wxPython umzugehen.
                             # http://www.blog.pythonlibrary.org/2010/04/04/wxpython-grid-tips-and-tricks/
-    def __init__(self, parent): # durch die erste __init__ wird nichts mehr vom parent (wx.grid.Grid) geerbt.
+    def __init__(self, parent):     # Durch die erste __init__ wird nichts mehr vom parent (wx.grid.Grid) geerbt..
         """Constructor"""
-        wx.grid.Grid.__init__(self, parent) # um es dennoch zu erben, muss die __init__ des parents aufgerufen werden
+        wx.grid.Grid.__init__(self, parent)     # ..um dennoch zu erben, muss die parent.__init__ aufgerufen werden
         self.parent = parent
         self.CreateGrid(200, 58)
         # self.SetRowSize(0, 60)
@@ -315,8 +316,6 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
         self.GetGridWindow().Bind(wx.EVT_MOTION, self.on_mouse_over)
 
         self.Show()
-
-                                #
 
     def on_mouse_over(self, event):
         """
@@ -348,12 +347,14 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
             self.popupID2 = wx.NewId()
             self.popupID3 = wx.NewId()
             self.popupID4 = wx.NewId()
+            self.popupID5 = wx.NewId()
 
         menu = wx.Menu()
         item = wx.MenuItem(menu, self.popupID1, "trigger Cell")
         item_02 = wx.MenuItem(menu, self.popupID2, "trigger category")
         item_03 = wx.MenuItem(menu, self.popupID3, "select whole category")
         item_04 = wx.MenuItem(menu, self.popupID4, "unselect whole Category")
+        item_uncertain = wx.MenuItem(menu, self.popupID5, "uncertain")
 
         sub_menu = wx.Menu()
         sub_menu.Append(item_02)
@@ -362,6 +363,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
 
         menu.Append(item)
         menu.Append(wx.NewId(), "Category", sub_menu)
+        menu.Append(item_uncertain)
 
         self.PopupMenu(menu)
 
@@ -369,6 +371,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
         self.Bind(wx.EVT_MENU, self.trigger_kategorie_from_popup, item_02)
         self.Bind(wx.EVT_MENU, self.select_whole_category_from_popup, item_03)
         self.Bind(wx.EVT_MENU, self.unselect_whole_category_from_popup, item_04)
+        self.Bind(wx.EVT_MENU, self.select_uncertain_from_popup, item_uncertain)
         menu.Destroy()
 
     def trigger_kategorie_from_popup(self, _):
@@ -405,6 +408,16 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
             if c.value[0].id == kat_id:
                 self.SetCellBackgroundColour(c.row, c.col, WHITE)
                 c.konzept = None
+        self.ForceRefresh()
+
+    def select_uncertain_from_popup(self, _):
+        current_textcolor = frame.myGrid.GetCellTextColour(self.this_row, self.this_col)
+        if active_konzeptColor != "#ffffff" and active_konzeptColor != current_textcolor:
+            frame.myGrid.SetCellTextColour(self.this_row, self.this_col, active_konzeptColor)
+            active_konzept.uncertain.append((self.this_row, self.this_col))
+        else:
+            frame.myGrid.SetCellTextColour(self.this_row, self.this_col, "#000000")
+            active_konzept.uncertain.remove((self.this_row, self.this_col))
         self.ForceRefresh()
 
     def set_cellvalue(self, cellpos, value):
@@ -486,6 +499,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
                 self.SetCellBackgroundColour(c.row, c.col, WHITE)
                 c.color = WHITE
             c.konzept = None
+            frame.myGrid.SetCellTextColour(c.row, c.col, "#000000")
 
         self.ForceRefresh()
         self.parent.GetParent().tmpStoredKonzepte = None
@@ -1095,6 +1109,9 @@ class InstitutsForm(wx.Frame):
                                 checked_items.append(inst.capitalize())
                             else:
                                 self.checkbox_sum.SetValue(True)
+                    if v["rechnungstyp"] != "Inst":
+                        for cell_pos in v["uncertain"]:
+                            frame.myGrid.SetCellTextColour(cell_pos[0], cell_pos[1], v["color"])
 
                 else:
                     msg = "File '{}' is not of type '{}'\n\n" \
@@ -1176,8 +1193,6 @@ class InstitutsForm(wx.Frame):
             else:
                 years = range(1948, 2006)
 
-
-
             for i, sheet in enumerate(years):
                 xkategorien = []
                 for kat in kategorien:
@@ -1200,7 +1215,6 @@ class InstitutsForm(wx.Frame):
 
         for toc in [False, True]:
             if toc:
-                # myPDF.close()
                 myPDF = PDF()
                 myPDF.add_page()
                 myPDF.set_font('Times', 'B', 12)
@@ -1222,15 +1236,18 @@ class InstitutsForm(wx.Frame):
 
             # Grafiken
             myPDF.add_page()
-            myPDF.image(image, w=200, h=150)
+            if image:
+                myPDF.image(image, w=200, h=150)
 
             for konzeptname, sheets in report_konzepte.items():
                 myPDF.add_page()
                 myPDF.set_font('Times', 'B', 12)
                 myPDF.cell(w=50, h=12, txt="", ln=1)
                 myPDF.cell(w=10, h=12, txt="")
-                myPDF.cell(w=50, h=12, txt=konzeptname, ln=1)
+                myPDF.cell(w=160, h=12, txt=konzeptname)
                 myPDF.set_font('Times', size=8)
+                myPDF.cell(w=50, h=12, txt="DM", ln=1)
+
                 if not toc:
                     inhaltsverzeichnis[konzeptname] = myPDF.page_no()
 
@@ -1246,8 +1263,14 @@ class InstitutsForm(wx.Frame):
                             myPDF.cell(w=10, h=8, txt="")
                         y = myPDF.get_y()
                         myPDF.multi_cell(w=140, h=8, txt=x[0])
-                        myPDF.set_xy(x=175, y=y)
+                        new_line_y = myPDF.get_y()
+                        if new_line_y - y > 10:     # Wenn Multi_cell mit den Kategoriennamen einen linebreak hatte..
+                            myPDF.set_xy(x=175, y=y+7)  # .. dann Cell mit Beträgen eine Zeile tiefer.
+                        else:
+                            myPDF.set_xy(x=175, y=y)    # .. sonst auf selber höhe.
+
                         myPDF.multi_cell(w=50, h=8, txt=x[1])
+                        myPDF.set_y(new_line_y)
                         summe += float(x[1])
                     if len(txt) > 1:
                         x, y = myPDF.get_x(), myPDF.get_y()
@@ -1593,10 +1616,19 @@ def line_plot_gesamt(dct_konzepte, mode, xshow=True):
 
     for key, lst in dct_konzepte.items():
         color = frame.konzepte[key].color
+        values = []
         if bool_inflation:
-            plt.plot([x[0] for x in lst if x[0] <= 1999], [x[1] / dct_preisindices[x[0]] for x in lst if x[0] <= 1999], color=color)
+            for x in lst:
+                # prevent deviding a nonetype
+                if x[1] is None and x[0] <= 1999:
+                    values.append(None)
+                elif x[0] <= 1999:
+                    values.append(x[1] / dct_preisindices[x[0]] / 1000000)
+            plt.plot([x[0] for x in lst if x[0] <= 1999], values, color=color)
         else:
-            plt.plot([x[0] for x in lst], [x[1] for x in lst], color=color)
+            for x in lst:
+                values.append(x[1] / 1000000)
+            plt.plot([x[0] for x in lst], values, color=color)
         plt.grid(linewidth='0.2')
         legend.append(key)
 
@@ -1605,6 +1637,12 @@ def line_plot_gesamt(dct_konzepte, mode, xshow=True):
     bottom, top = plt.ylim()
     plt.ylim(0, top)
     plt.legend(legend)
+    plt.ylabel("Beträge in mio. DM")
+    plt.xlabel("Jahre")
+    if bool_inflation:
+        plt.title("Inflationsbereinigt")
+    else:
+        plt.title("Title")
     if xshow:
         plt.show()
     else:
@@ -1808,6 +1846,24 @@ def get_inflation_indices():
         dct_preisindices[int(cell[:4])] = float(ws.cell(row, 6).value / 100)
 
     return dct_preisindices
+
+
+'''def tracefunc(frame, event, arg, indent=[0]):
+    if ("Finanzexplorer_model.py" in frame.f_code.co_filename or "Finanzexplorer_Institute.py" in frame.f_code.co_filename) \
+            and "on_mouse_over" not in frame.f_code.co_name or "get_dct_cells" not in frame.f_code.co_name:
+        if event == "call":
+            indent[0] += 2
+            print("-" * indent[0] + "> call function", frame.f_code.co_name)
+        elif event == "return":
+            print("<" + "-" * indent[0], "exit function", frame.f_code.co_name)
+            indent[0] -= 2
+    return tracefunc
+
+
+import sys
+
+sys.setprofile(tracefunc)'''
+
 
 
 # create a directory 'Saves' next to the Platypus-file ( hopefully ;) )
