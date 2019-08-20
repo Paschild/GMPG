@@ -348,18 +348,21 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
             self.popupID3 = wx.NewId()
             self.popupID4 = wx.NewId()
             self.popupID5 = wx.NewId()
+            self.popupID6 = wx.NewId()
 
         menu = wx.Menu()
         item = wx.MenuItem(menu, self.popupID1, "trigger Cell")
         item_02 = wx.MenuItem(menu, self.popupID2, "trigger category")
         item_03 = wx.MenuItem(menu, self.popupID3, "select whole category")
         item_04 = wx.MenuItem(menu, self.popupID4, "unselect whole Category")
+        item_uncertain_cat = wx.MenuItem(menu, self.popupID5, "uncertain")
         item_uncertain = wx.MenuItem(menu, self.popupID5, "uncertain")
 
         sub_menu = wx.Menu()
         sub_menu.Append(item_02)
         sub_menu.Append(item_03)
         sub_menu.Append(item_04)
+        sub_menu.Append(item_uncertain_cat)
 
         menu.Append(item)
         menu.Append(wx.NewId(), "Category", sub_menu)
@@ -372,6 +375,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
         self.Bind(wx.EVT_MENU, self.select_whole_category_from_popup, item_03)
         self.Bind(wx.EVT_MENU, self.unselect_whole_category_from_popup, item_04)
         self.Bind(wx.EVT_MENU, self.select_uncertain_from_popup, item_uncertain)
+        self.Bind(wx.EVT_MENU, self.select_uncertain_cat_from_popup, item_uncertain_cat)
         menu.Destroy()
 
     def trigger_kategorie_from_popup(self, _):
@@ -418,6 +422,19 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
         else:
             frame.myGrid.SetCellTextColour(self.this_row, self.this_col, "#000000")
             active_konzept.uncertain.remove((self.this_row, self.this_col))
+        self.ForceRefresh()
+
+    def select_uncertain_cat_from_popup(self, _):
+        current_cell = self.get_cell(self.this_row, self.this_col)
+        current_textcolor = frame.myGrid.GetCellTextColour(self.this_row, self.this_col)
+        for c in model.get_dct_cells().values():
+            if c.value[0].id == current_cell.value[0].id:
+                if active_konzeptColor != "#ffffff" and active_konzeptColor != current_textcolor:
+                    frame.myGrid.SetCellTextColour(c.row, c.col, active_konzeptColor)
+                    active_konzept.uncertain.append((c.row, c.col))
+                else:
+                    frame.myGrid.SetCellTextColour(c.row, c.col, "#000000")
+                    active_konzept.uncertain.remove((c.row, c.col))
         self.ForceRefresh()
 
     def set_cellvalue(self, cellpos, value):
