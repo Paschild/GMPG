@@ -7,6 +7,7 @@ import Finanzexplorer_model as model
 import copy
 import json
 import math
+import csv
 from collections import defaultdict, OrderedDict
 from operator import itemgetter
 from openpyxl import load_workbook
@@ -23,9 +24,8 @@ Eine Übersicht über alle wx.Python widgets findet sich unter folgendem Link:
 https://wxpython.org/Phoenix/docs/html/gallery.html
 '''
 
-' Git-Test'
-
 develope_mode = False
+dev_function_stack = []
 WHITE = "#ffffff"           # für das Interface (wx.grid)
 active_konzeptColor = "#ffffff"     # active bedeutet, dieses Konzept ist angewählt
 active_konzept = None
@@ -815,6 +815,7 @@ class InstitutsForm(wx.Frame):
         speichert sie im dict self.institute unter dem Key des Institutsnamens. Nested dict 'path' and 'file'
         :return:
         """
+
         if develope_mode:
             print(help(self.set_institutes))
 
@@ -1299,7 +1300,7 @@ class InstitutsForm(wx.Frame):
                         myPDF.cell(w=50, h=8, txt=str(round(summe, 2)), ln=1)
 
             if toc:
-                myPDF.output(filename + '.pdf', 'F')
+                myPDF.output("../../../Reports/" + filename + '.pdf', 'F')
                 os.system('open Test.pdf&')
         myPDF.close()
 
@@ -1497,6 +1498,7 @@ def line_plot_inst(data, typ, grouping_by, mode, inflation, xshow=True):
 
 
 def line_plot_gesamt_settings(xshow=True):
+
     if len(frame.checkbox.GetCheckedItems()) != 0:
         checked_saves_paths = []
         for x in frame.checkbox.GetCheckedItems():
@@ -1508,6 +1510,16 @@ def line_plot_gesamt_settings(xshow=True):
 
 
 def line_plot_gesamt(dct_konzepte, mode, xshow=True):
+    """
+    Ein Diagramm für die MPG-Gesamt wird erzeugt und je nach 'xshow' gespeichert oder angezeigt.
+
+    :param dct_konzepte: Kanzeptdaten als Dict gespeichert.
+    :param mode: Nur relevant, wenn bereits gespeicherte Konzepte, die nicht geladen wurden, geplottet werden sollen.
+    :param xshow: Bool. Die Funktion wird auch aufgerufen, wenn z.B. ein Report erstellt werden soll. in dem Fall soll
+        der Plot nicht angezeigt werden (False), sondern nur das Diagramm erzeugt und gespeichert werden soll (True).
+    :return:'temp_chart.png', nur wenn xshow == False.
+    """
+
     legend = []
     fig = plt.figure()
 
@@ -1665,7 +1677,7 @@ def line_plot_gesamt(dct_konzepte, mode, xshow=True):
         plt.show()
     else:
         plt.savefig('testchart.png', format='png', dpi=fig.dpi * 2)
-        return 'testchart.png'
+        return 'temp_chart.png'
 
 
 def import_inst_template():
@@ -1865,22 +1877,27 @@ def get_inflation_indices():
 
     return dct_preisindices
 
+no_trace = ["calculate_zwischensumme", "set_cellvalue", "set_hierarchie", "__init__", "on_mouse_over", "<lambda>", "<listcomp>", "clamp"]
+def tracefunc(frame, event, arg, indent=[0]):
+    if "Finanzexplorer_model" in frame.f_code.co_filename or "Finanzexplorer_Institute" in frame.f_code.co_filename:
+        if frame.f_code.co_name not in no_trace and ("get" not in frame.f_code.co_name or frame.f_code.co_name == "new_get_konzept"):
+            if event == "call":
+                dev_function_stack.append(frame.f_code.co_name)
+                indent[0] += 2
+                if develope_mode:
+                    print("-" * indent[0] + "> call function", frame.f_code.co_name + " (" + str(frame.f_lineno) + ")")
 
-'''def tracefunc(frame, event, arg, indent=[0]):
-    if ("Finanzexplorer_model.py" in frame.f_code.co_filename or "Finanzexplorer_Institute.py" in frame.f_code.co_filename) \
-            and "on_mouse_over" not in frame.f_code.co_name or "get_dct_cells" not in frame.f_code.co_name:
-        if event == "call":
-            indent[0] += 2
-            print("-" * indent[0] + "> call function", frame.f_code.co_name)
-        elif event == "return":
-            print("<" + "-" * indent[0], "exit function", frame.f_code.co_name)
-            indent[0] -= 2
+            elif event == "return":
+                dev_function_stack.append(frame.f_code.co_name)
+                if develope_mode:
+                    print("<" + "-" * indent[0], "exit function", frame.f_code.co_name + " (" + str(frame.f_lineno) + ")")
+                indent[0] -= 2
     return tracefunc
 
 
 import sys
 
-sys.setprofile(tracefunc)'''
+sys.setprofile(tracefunc)
 
 
 
@@ -1896,5 +1913,13 @@ init_frame.Destroy()
 dct_preisindices = get_inflation_indices()
 
 app.MainLoop()
+
+if develope_mode:
+    with open('gephi_nodes.csv', mode='w') as csv_file:
+        csv_writer = csv.writer(csv_file, delimiter=',')
+        line_count = 0
+        csv_writer.writerow(['Source','Target'])
+        for i, x in enumerate(dev_function_stack[1:]):
+            csv_writer.writerow([str(dev_function_stack[i-1]), x])
 
 print("Process finished with exit code 0")
