@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# © Paul Schild 2019
 import wx
 import wx.grid
 import os
@@ -16,8 +17,6 @@ use('WXAgg')
 import matplotlib.pyplot as plt
 from fpdf import FPDF
 import datetime
-import locale
-locale.setlocale(locale.LC_ALL, 'de_DE')
 
 '''
 Eine Übersicht über alle wx.Python widgets findet sich unter folgendem Link:
@@ -1017,6 +1016,20 @@ class InstitutsForm(wx.Frame):
         line_plot_gesamt_settings()
 
     def new_get_konzept(self):
+        """
+        Es werden alle Zellen der Obj Schemata durchgegangen und geschaut, welche Zellen zu einem Konzept gehören.
+        Diese Zellen mit Konzept werden in einem Dict unter dem Key des Konzepts
+        und der entsprechenden Jahreszahl gespeichert.
+
+        Besser: Nicht in den Cell-obj das Konzept speichern, sondern in den Konzepten die tatsächlichen Cell-obj.
+        So wäre es möglich, direkt anhand der Konzepte die richtigen Zellen anzusteuern und man muss nicht
+        alle Zellen (auch die ohne Konzept) durchsuchen. Beide Verbindungen (Cell -> Konzept und Konzept -> Cell)
+        gleichzeitig sind nicht möglich, da so eine schleife entstehen würde, die beim erzeugen eines json
+        zum Error führen würde (siehe save_konzepte()).
+
+        :return: dct_xkonzepte = <dict> {Konzeptname: <list> [(Jahr, Betrag), (Jahr, Betrag),..], Konzeptname:..}
+        """
+
         tmp_dct_xkonzepte = defaultdict(dict)
         dct_xkonzepte = defaultdict(list)
 
@@ -1061,6 +1074,13 @@ class InstitutsForm(wx.Frame):
             pass
 
     def save_konzepte(self, _):
+        """
+        Anhand der erstellten Konzepte wird ein defaul-filename erzeugt. In dieser Datei wird das dict frame.konzepte
+        als json gespeichert.
+
+        :param _: not used
+        :return: no return :/
+        """
         konzeptnames = []
         for x in self.checkbox.GetCheckedItems():
             konzeptnames.append(self.choices[x])
@@ -1089,6 +1109,12 @@ class InstitutsForm(wx.Frame):
                 json.dump(self.konzepte, outfile, default=lambda o: o.__dict__)
 
     def load_konzepte_picker(self, _):
+        """
+        Dialogfeld zum auswählen der zu ladenden Datei wird geöffnet.
+
+        :param _:
+        :return: Boolean = Datei wurde ausgewählt oder nicht.
+        """
         filedlg = wx.FileDialog(self.p, "Load", style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
         filedlg.ShowModal()
         filepath = filedlg.GetPath()
@@ -1099,6 +1125,15 @@ class InstitutsForm(wx.Frame):
             return False
 
     def load_konzept(self, _, filepath):
+        """
+        Das Json aus der Datei wird als Dictionary geladen und die Informationen verarpeitet,
+        sprich: Rechnungstyp gesetzt, richtige Interface laden, Zellen des Konzepts entsprechend eingefärbt und
+        Konzepte im FRame gespeichert.
+
+        :param _: not used
+        :param filepath: Pfad zur Datei
+        :return: no return :/
+        """
         global active_konzept, active_konzeptColor
         with open(filepath) as infile:
             dct_infile = json.load(infile)
@@ -1167,6 +1202,16 @@ class InstitutsForm(wx.Frame):
             self.myGrid.ForceRefresh()
 
     def find_category(self, _):
+        """
+        Es werden alle Zellen nach dem Suchbegriff durchsucht und bei Übereinstimmung hellblau eingefärbt. Zudem
+        werden diese Zellen in der Liste found_cells gespeichert.
+        Not case-sensitive. Falls erwünscht die .lower() herausnehmen.
+        Im Fall der Institute werden die ersten 8 Zeilen sowie graue Zellen nicht berücksichtigt.
+
+
+        :param _: not used
+        :return: no return :/
+        """
         self.unfind_category(_)
 
         value = self.search_control.GetValue()
@@ -1183,6 +1228,12 @@ class InstitutsForm(wx.Frame):
         self.myGrid.ForceRefresh()
 
     def unfind_category(self, _):
+        """
+        Zellen aus der Liste found_cells erhalten wieder ihre ursprüngliche Farbe (Farbe aus <Cell-Obj>.color).
+
+        :param _: not used
+        :return: no return :/
+        """
         global found_cells
         for cell in found_cells:
             self.myGrid.SetCellBackgroundColour(cell.row, cell.col, cell.color)
@@ -1190,6 +1241,19 @@ class InstitutsForm(wx.Frame):
         self.myGrid.ForceRefresh()
 
     def create_report(self, _, filename="Test"):
+        """
+        Erstellt eine PDF, zum einen mit dem Diagramm, zum anderen mit einer Jahresgenauen aufschlüsselung
+        der pro Konzept verwendeten Kategorien und ihrer Geldbeträge.
+
+        Zum erstellen eines Inhaltsverzeichnisses ('toc') muss der letzte Prozess zweimal durchlaufen werden.
+        Die Seitenangaben müssen beim ersten durchlauf gespeichert werden, das sie beim zweiten Durchlauf beim erstellen
+        des Inhaltsverzeichnisses bereits auf der ersten Seite zum erstellen der Links gebraucht werden.
+
+        :param _: not used
+        :param filename: Dateiname (Bislang nur 'Test'. Besser: 'Report_<Konzeptnamen>' (siehe save_konzepte()))
+        :return: no return :/
+        """
+
         if model.RECHNUNGSTYP == "INST":
             image = self.plot_settings(xshow=False)
         else:
@@ -1511,12 +1575,12 @@ def line_plot_gesamt_settings(xshow=True):
 
 def line_plot_gesamt(dct_konzepte, mode, xshow=True):
     """
-    Ein Diagramm für die MPG-Gesamt wird erzeugt und je nach 'xshow' gespeichert oder angezeigt.
+    Ein Diagramm für die MPG-Gesamt wird erzeugt und je nach 'xshow' gespeichert oder direkt angezeigt.
 
     :param dct_konzepte: Kanzeptdaten als Dict gespeichert.
     :param mode: Nur relevant, wenn bereits gespeicherte Konzepte, die nicht geladen wurden, geplottet werden sollen.
     :param xshow: Bool. Die Funktion wird auch aufgerufen, wenn z.B. ein Report erstellt werden soll. in dem Fall soll
-        der Plot nicht angezeigt werden (False), sondern nur das Diagramm erzeugt und gespeichert werden soll (True).
+        der Plot nicht angezeigt werden (False), sondern nur das Diagramm erzeugt und gespeichert werden (True).
     :return:'temp_chart.png', nur wenn xshow == False.
     """
 
@@ -1681,6 +1745,17 @@ def line_plot_gesamt(dct_konzepte, mode, xshow=True):
 
 
 def import_inst_template():
+    """
+    Anhand des Excell-Templates wird für jedes relevante Arbeitsblatt (also nicht das Synthese-Blatt)
+    die erste Spalte eingelesen und im Grid des Interface eins zu eins übertragen. Jede Spalte im Grid repräsentiert
+    also ein Arbeitsblatt.
+
+    Sonderfall Arbeitsblatt "1954-1963": In diesem Jahr tauchen die Einnahmen mehrmals auf. Die Zeilen sind verborgen,
+    aber es gibt einen sprung zwischen Zeile 13 und 54. Die Idee war damals mehrere Abteilungen (mit einzelnen
+    Haushaltsplänen) eines Instituts auch in einer Excelldatei zu speichern. Diese Idee wurde jedoch verworfen.
+
+    :return: no return :/
+    """
     wb = load_workbook("../Finanzexplorer-Git-data/Institute/Haushaltsbücher_MPI_Template.xlsx", data_only=True)
     grid_col = 0
     for s in range(len(wb.sheetnames)):
@@ -1727,6 +1802,20 @@ tmp_stack = []
 
 
 def set_hierarchie(schema_id, oberkategorie_id):
+    """
+    Jedes Schema bekommt eine Liste ('kategorien_hierarchisch') mit Tuples bestehend aus 3 Werten: (1. Kategorie-Obj,
+    2. Folge von '-' zur Markierung der Hierarchie-Ebene, 3. Oberkategorie (Kategorie-Obj) von <1. Kategorie-Obj>).
+
+    Zunächst wird diese Funktion für jede einzelne Superkategorie als Parameter (oberkategorie_id) aufgerufen. Ausgehend
+    von diesen 'wanderd' die Funktion rekursiv durch den gesamten Strukturbaum.
+
+    Superkategorien sind "Einnahmen", "Ausgaben", "Aktiva" und "Passiva", also die oberste Hierarchie-Ebene.
+
+    :param schema_id: ID zum ansteuern des richigen Schemata aus Finanzexplorer_model.py
+    :param oberkategorie_id: ID der jeweiligen Oberkategorie.
+    :return: no return :/
+    """
+
     if oberkategorie_id in model.superkategorien:
         model.get_dct_schemata()[schema_id].kategorien_hierarchisch.append(
             (model.get_dct_kategorien()[oberkategorie_id],
@@ -1744,6 +1833,19 @@ def set_hierarchie(schema_id, oberkategorie_id):
 
 
 def import_mpg_gesamt_data():
+    """
+    Importiert die Daten aus den CSV-Dateien (aus der Finanz-DB):
+        Kategorien:
+        Posten: http://gmpg-intern.mpiwg-berlin.mpg.de:8888/explorer/525/
+        Kategorierelationen: http://gmpg-intern.mpiwg-berlin.mpg.de:8888/explorer/526/
+        Schemata:
+
+    Hierarchie der Kategorien innerhalb eines Schemas wird festgelegt.
+
+
+
+    :return: no return :/
+    """
     model.import_kategorien()
     model.import_posten()
     model.import_kategorierelations()
@@ -1776,6 +1878,9 @@ def import_mpg_gesamt_data():
 
 
 def populate_cells():
+    """
+    Zellen im Grid werden nach Vorlage der Hierarchie im Schema befüllt.
+    """
     col = -1
     for year in range(1948, 2006):
         for schema in model.get_dct_schemata().values():
@@ -1796,6 +1901,9 @@ def populate_cells():
 
 
 def fresh_new_start():
+    """
+    Alles wird gelöscht, um neu beginnen zu können.
+    """
     global dct_cells
     model.dct_Kategorien = {}
     model.dct_Posten = {}
@@ -1808,6 +1916,9 @@ def fresh_new_start():
 
 
 def get_saves():
+    """
+    :return: saves_path = Liste von Pfaden zu den  Dateien aus dem Ordner 'Saves'
+    """
     saves_path = {}
     for (dirpath, dirnames, filenames) in os.walk("../../../Saves"):
         filenames = [x for x in filenames]
@@ -1822,6 +1933,13 @@ def get_saves():
 
 
 def rgb_to_hex(rgb):
+    """
+    wandelt einen rgb-Farbcode in einen Hex-Farbcode um:
+
+    :param rgb: Drei Werte zwischen 0 und 255
+    :return: hex, z.B. "#ffffff"
+    """
+
     r, g, b = rgb[:3]
 
     def clamp(x):
@@ -1830,6 +1948,15 @@ def rgb_to_hex(rgb):
 
 
 def get_limits(data, typ):
+    """
+    Beim erstellen von Diagrammen zu mehreren Instituten oder Konzepten kann man wählen,
+    ob die erstellten Diagramme die selbe Scalierung haben sollen. Um dies zu tun brauchen
+    wir das Minimum und Maximum der Grafen.
+
+    :param data:
+    :param typ: IST oder/und SOLL
+    :return: Minimum, Maximum, Steps
+    """
     tmp_min = 0
     tmp_max = 0
     for konzeptname, konzept in data.items():
@@ -1862,6 +1989,10 @@ def get_limits(data, typ):
 
 
 def get_inflation_indices():
+    """
+    liest die Inflationsdaten aus der entsprechenden Excell-tabelle ein und gibt sie als Dictionary zurück
+    :return: Dictionary
+    """
     dct_preisindices = {}
 
     wb = load_workbook("../Finanzexplorer-Git-data/verbraucherpreisindex-lange-reihen-xlsx-5611103.xlsx", data_only=True)
