@@ -1365,7 +1365,7 @@ class InstitutsForm(wx.Frame):
 
             if toc:
                 myPDF.output("../../../Reports/" + filename + '.pdf', 'F')
-                os.system('open Test.pdf&')
+                os.system('open ../../../Reports/Test.pdf&')
         myPDF.close()
 
 
@@ -1740,7 +1740,7 @@ def line_plot_gesamt(dct_konzepte, mode, xshow=True):
     if xshow:
         plt.show()
     else:
-        plt.savefig('testchart.png', format='png', dpi=fig.dpi * 2)
+        plt.savefig('temp_chart.png', format='png', dpi=fig.dpi * 2)
         return 'temp_chart.png'
 
 
