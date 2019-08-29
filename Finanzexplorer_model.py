@@ -27,7 +27,7 @@ class Konzept:
 
 
 class Cell:
-    def __init__(self, cellrow, cellcol, value, jahr):  # value = (kategorie, "--..", oberkategorie)
+    def __init__(self, cellrow, cellcol, value, jahr):  # value = (<obj> kategorie, "--..", <obj> (ober)kategorie)
         self.row = cellrow
         self.col = cellcol
         self.value = value

@@ -12,8 +12,6 @@ import csv
 from collections import defaultdict, OrderedDict
 from operator import itemgetter
 from openpyxl import load_workbook
-from matplotlib import use
-use('WXAgg')
 import matplotlib.pyplot as plt
 from fpdf import FPDF
 import datetime
@@ -23,7 +21,7 @@ Eine Übersicht über alle wx.Python widgets findet sich unter folgendem Link:
 https://wxpython.org/Phoenix/docs/html/gallery.html
 '''
 
-develope_mode = False
+develope_mode = True
 dev_function_stack = []
 WHITE = "#ffffff"           # für das Interface (wx.grid)
 active_konzeptColor = "#ffffff"     # active bedeutet, dieses Konzept ist angewählt
@@ -670,6 +668,7 @@ class InstitutsForm(wx.Frame):
         helpButton = wx.Menu()
         templateItem = helpButton.Append(-1, 'show Template')
         developeItem = helpButton.Append(-1, 'develope mode')
+        TestItem = helpButton.Append(-1, 'Test')
         menuBar.Append(helpButton, 'help')
 
         self.SetMenuBar(menuBar)
@@ -682,6 +681,19 @@ class InstitutsForm(wx.Frame):
         self.Bind(wx.EVT_MENU, self.create_report, create_report)
         self.Bind(wx.EVT_MENU, self.open_template, templateItem)
         self.Bind(wx.EVT_MENU, self.develope_mode, developeItem)
+        self.Bind(wx.EVT_MENU, self.test, TestItem)
+
+    def test(self, _):
+        print(dct_cells)
+        print(model.dct_cells)
+        if len(self.konzepte.values()) != 0:
+            for kon in self.konzepte.values():
+                for cellname in kon.uncertain:
+                    print(model.dct_cells[cellname].value[0].bezeichnung)
+                    print(model.dct_cells[cellname].posten.geldbetrag)
+                    print("")
+
+        self.new_get_konzept()
 
     def develope_mode(self, _):
         """
@@ -1029,31 +1041,65 @@ class InstitutsForm(wx.Frame):
 
         :return: dct_xkonzepte = <dict> {Konzeptname: <list> [(Jahr, Betrag), (Jahr, Betrag),..], Konzeptname:..}
         """
+        Paul = False
+        if Paul:
+            tmp_dct_xkonzepte = defaultdict(dict)
+            dct_xkonzepte = defaultdict(list)
 
-        tmp_dct_xkonzepte = defaultdict(dict)
-        dct_xkonzepte = defaultdict(list)
+            for s in model.get_dct_schemata().values():
+                if s.typ == model.RECHNUNGSTYP:
+                    for kon in self.konzepte.values():
+                        tmp_dct_xkonzepte[kon.name][s.jahr] = None
 
-        for s in model.get_dct_schemata().values():
-            if s.typ == model.RECHNUNGSTYP:
-                for kon in self.konzepte.values():
-                    tmp_dct_xkonzepte[kon.name][s.jahr] = None
+                    for c in s.cells:
+                        if c.konzept:
+                            if tmp_dct_xkonzepte[c.konzept.name][s.jahr] is None:
+                                tmp_dct_xkonzepte[c.konzept.name][s.jahr] = 0.00
+                            if c.jahr >= 2001:
+                                    tmp_dct_xkonzepte[c.konzept.name][s.jahr] += (c.posten.geldbetrag * 1.95583)   # DM -> €
+                            else:
+                                tmp_dct_xkonzepte[c.konzept.name][s.jahr] += c.posten.geldbetrag
 
-                for c in s.cells:
-                    if c.konzept:
-                        if tmp_dct_xkonzepte[c.konzept.name][s.jahr] is None:
-                            tmp_dct_xkonzepte[c.konzept.name][s.jahr] = 0.00
-                        if c.jahr >= 2001:
-                                tmp_dct_xkonzepte[c.konzept.name][s.jahr] += (c.posten.geldbetrag * 1.95583)   # DM -> €
-                        else:
-                            tmp_dct_xkonzepte[c.konzept.name][s.jahr] += c.posten.geldbetrag
+            for name, konzept in tmp_dct_xkonzepte.items():
+                for year, v_values in konzept.items():
+                    dct_xkonzepte[name].append((year, v_values))
 
-        for name, konzept in tmp_dct_xkonzepte.items():
-            for year, v_values in konzept.items():
-                dct_xkonzepte[name].append((year, v_values))
+                dct_xkonzepte[name].sort(key=lambda x: x[0])
+                self.konzepte[name].plots["MPG-Gesamt"] = dct_xkonzepte[name]
+            return dct_xkonzepte
+        else:
 
-            dct_xkonzepte[name].sort(key=lambda x: x[0])
-            self.konzepte[name].plots["MPG-Gesamt"] = dct_xkonzepte[name]
-        return dct_xkonzepte
+            tmp_mehrerekonzepte = {}
+
+            if model.RECHNUNGSTYP != "INST":
+                tmp_dict = model.dct_cells
+            else:
+                tmp_dict = dct_cells
+
+            for kon in self.konzepte.values():
+                tmp_kondct = {}
+                for year in range(1948, 2003):
+                    tmp_kondct[year] = 0
+
+
+                for cellname in kon.cells:
+                    cellobj = tmp_dict[cellname]
+                    tmp_kondct[cellobj.jahr] += cellobj.posten.geldbetrag
+
+                for k,v in tmp_kondct.items():
+                    print(k, v)
+
+                tmp_mehrerekonzepte[kon.name] = tmp_kondct
+
+            print(tmp_mehrerekonzepte)
+            return tmp_mehrerekonzepte
+
+
+
+
+
+
+
 
     def plot_settings(self, xshow=True):
         data = self.get_inst_konzepte()
@@ -1364,7 +1410,6 @@ class InstitutsForm(wx.Frame):
                         myPDF.cell(w=50, h=8, txt=str(round(summe, 2)), ln=1)
 
             if toc:
-                os.makedirs("../../../Reports/", exist_ok=True)
                 myPDF.output("../../../Reports/" + filename + '.pdf', 'F')
                 os.system('open ../../../Reports/Test.pdf&')
         myPDF.close()
@@ -2011,7 +2056,7 @@ def get_inflation_indices():
 
 no_trace = ["calculate_zwischensumme", "set_cellvalue", "set_hierarchie", "__init__", "on_mouse_over", "<lambda>", "<listcomp>", "clamp"]
 def tracefunc(frame, event, arg, indent=[0]):
-    if "Finanzexplorer_model" in frame.f_code.co_filename or "Finanzexplorer_Institute" in frame.f_code.co_filename:
+    if "Finanzexplorer_model" in frame.f_code.co_filename or "TestM" in frame.f_code.co_filename:
         if frame.f_code.co_name not in no_trace and ("get" not in frame.f_code.co_name or frame.f_code.co_name == "new_get_konzept"):
             if event == "call":
                 dev_function_stack.append(frame.f_code.co_name)
