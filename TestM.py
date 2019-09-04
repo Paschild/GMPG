@@ -12,6 +12,8 @@ import csv
 from collections import defaultdict, OrderedDict
 from operator import itemgetter
 from openpyxl import load_workbook
+from matplotlib import use
+use('WXAgg')
 import matplotlib.pyplot as plt
 from fpdf import FPDF
 import datetime
@@ -668,7 +670,6 @@ class InstitutsForm(wx.Frame):
         helpButton = wx.Menu()
         templateItem = helpButton.Append(-1, 'show Template')
         developeItem = helpButton.Append(-1, 'develope mode')
-        TestItem = helpButton.Append(-1, 'Test')
         menuBar.Append(helpButton, 'help')
 
         self.SetMenuBar(menuBar)
@@ -681,19 +682,6 @@ class InstitutsForm(wx.Frame):
         self.Bind(wx.EVT_MENU, self.create_report, create_report)
         self.Bind(wx.EVT_MENU, self.open_template, templateItem)
         self.Bind(wx.EVT_MENU, self.develope_mode, developeItem)
-        self.Bind(wx.EVT_MENU, self.test, TestItem)
-
-    def test(self, _):
-        print(dct_cells)
-        print(model.dct_cells)
-        if len(self.konzepte.values()) != 0:
-            for kon in self.konzepte.values():
-                for cellname in kon.uncertain:
-                    print(model.dct_cells[cellname].value[0].bezeichnung)
-                    print(model.dct_cells[cellname].posten.geldbetrag)
-                    print("")
-
-        self.new_get_konzept()
 
     def develope_mode(self, _):
         """
@@ -1041,8 +1029,11 @@ class InstitutsForm(wx.Frame):
 
         :return: dct_xkonzepte = <dict> {Konzeptname: <list> [(Jahr, Betrag), (Jahr, Betrag),..], Konzeptname:..}
         """
-        Paul = False
-        if Paul:
+
+        paul = False
+        michi = True
+
+        if paul:
             tmp_dct_xkonzepte = defaultdict(dict)
             dct_xkonzepte = defaultdict(list)
 
@@ -1067,34 +1058,32 @@ class InstitutsForm(wx.Frame):
                 dct_xkonzepte[name].sort(key=lambda x: x[0])
                 self.konzepte[name].plots["MPG-Gesamt"] = dct_xkonzepte[name]
             return dct_xkonzepte
-        else:
 
-            tmp_mehrerekonzepte = {}
+        if michi:
+            tmp_dct_xkonzepte = defaultdict(dict)
+            dct_xkonzepte = defaultdict(list)
 
-            if model.RECHNUNGSTYP != "INST":
-                tmp_dict = model.dct_cells
-            else:
-                tmp_dict = dct_cells
+            for s in model.get_dct_schemata().values():
+                if s.typ == model.RECHNUNGSTYP:
+                    for kon in self.konzepte.values():
+                        tmp_dct_xkonzepte[kon.name][s.jahr] = None
 
-            for kon in self.konzepte.values():
-                tmp_kondct = {}
-                for year in range(1948, 2003):
-                    tmp_kondct[year] = 0
+                    for c in s.cells:
+                        if c.konzept:
+                            if tmp_dct_xkonzepte[c.konzept.name][s.jahr] is None:
+                                tmp_dct_xkonzepte[c.konzept.name][s.jahr] = 0.00
+                            if c.jahr >= 2001:
+                                tmp_dct_xkonzepte[c.konzept.name][s.jahr] += (c.posten.geldbetrag * 1.95583)  # DM -> €
+                            else:
+                                tmp_dct_xkonzepte[c.konzept.name][s.jahr] += c.posten.geldbetrag
 
+            for name, konzept in tmp_dct_xkonzepte.items():
+                for year, v_values in konzept.items():
+                    dct_xkonzepte[name].append((year, v_values))
 
-                for cellname in kon.cells:
-                    cellobj = tmp_dict[cellname]
-                    tmp_kondct[cellobj.jahr] += cellobj.posten.geldbetrag
-
-                for k,v in tmp_kondct.items():
-                    print(k, v)
-
-                tmp_mehrerekonzepte[kon.name] = tmp_kondct
-
-            print(tmp_mehrerekonzepte)
-            return tmp_mehrerekonzepte
-
-
+                dct_xkonzepte[name].sort(key=lambda x: x[0])
+                self.konzepte[name].plots["MPG-Gesamt"] = dct_xkonzepte[name]
+            return dct_xkonzepte
 
 
 
@@ -1410,6 +1399,7 @@ class InstitutsForm(wx.Frame):
                         myPDF.cell(w=50, h=8, txt=str(round(summe, 2)), ln=1)
 
             if toc:
+                os.makedirs("../../../Reports/", exist_ok=True)
                 myPDF.output("../../../Reports/" + filename + '.pdf', 'F')
                 os.system('open ../../../Reports/Test.pdf&')
         myPDF.close()
@@ -2077,7 +2067,6 @@ import sys
 sys.setprofile(tracefunc)
 
 
-
 # create a directory 'Saves' next to the Platypus-file ( hopefully ;) )
 os.makedirs("../Saves", exist_ok=True)
 
@@ -2100,3 +2089,5 @@ if develope_mode:
             csv_writer.writerow([str(dev_function_stack[i-1]), x])
 
 print("Process finished with exit code 0")
+
+
