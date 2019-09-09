@@ -336,7 +336,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
         except KeyError:  # for empty cells
             pass
         except AttributeError:  # for cells without oberkategorie
-            pass
+            pas
 
     def show_popup_menu(self, event):
         self.this_row = event.GetRow()
@@ -1094,6 +1094,7 @@ class InstitutsForm(wx.Frame):
         data = self.get_inst_konzepte()
         return_code = str(DialogPlotSettings(self, title="plot settings").ShowModal())
         if len(return_code) == 5:   # Prüfnummer (Länge 5 bedeutet Fenster wurde nicht geschlossen)
+            print("test")
             typ = ["IST", "SOLL", "IST & SOLL"][int(return_code[0]) - 1]
             grouping_by = ["Institute", "Konzept"][int(return_code[1]) - 1]
             mode = ["auto", "compareable"][int(return_code[2]) - 1]
