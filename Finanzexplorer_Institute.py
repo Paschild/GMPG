@@ -317,6 +317,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
 
         self.Show()
 
+    # zeigt Tooltip an, wenn sich die Maus über einer Zelle befindet, funktioniert nicht für INST?
     def on_mouse_over(self, event):
         """
         Displays a tooltip over any cell in a certain column
@@ -339,6 +340,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
         except AttributeError:  # for cells without oberkategorie
             pass
 
+    # öffnet bei Rechtsklick ein Popup-Menü, funktioniert nicht für INST?
     def show_popup_menu(self, event):
         self.this_row = event.GetRow()
         self.this_col = event.GetCol()
@@ -378,6 +380,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
         self.Bind(wx.EVT_MENU, self.select_uncertain_cat_from_popup, item_uncertain_cat)
         menu.Destroy()
 
+    # wählt
     def trigger_kategorie_from_popup(self, _):
         kat_id = self.get_cell(self.this_row, self.this_col).value[0].id
         for c in model.get_dct_cells().values():
@@ -522,6 +525,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
         self.ForceRefresh()
         self.parent.GetParent().tmpStoredKonzepte = None
 
+    # löscht Konzept im Grid, indem alle Zellen weiß gefärbt werden und Objekt.konzept auf None gesetzt wird
     def delete_konzept_in_grid(self):
         if model.RECHNUNGSTYP == "INST":
             for c in dct_cells.values():

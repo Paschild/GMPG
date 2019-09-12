@@ -1,0 +1,20 @@
+12.09.19
+
+
+Bugs und fehlende Features:
+
+- new_window funktioniert nicht
+- Fehlermeldung bei Rechtsklick: NewID() ist veraltet, funktioniert aber
+- Mouse Over und Popup-Menu funktionieren nicht für INST?
+
+- wenn für Institute in dem Jahr kein Haushaltsplan vorhanden ist, wäre ein Popup cool, das darauf hinweist.
+Momentan wird es nur in Pycharm ausgegeben.
+- wenn kein Institut ausgewählt ist und man auf Plot klickt, wäre ein Popup cool, das darauf hinweist.
+- bei Mouse Over wäre bei großen Zahlen ein trennender Punkt praktisch, also 1.000.000, plus DM oder €
+
+
+
+Fragen:
+
+- was hat es mit list_ctrl_index auf sich? bzw. mit wx.ListCtrl?
+- Unterschied zwischen trigger category und select whole category?
