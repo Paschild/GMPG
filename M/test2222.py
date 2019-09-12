@@ -1,6 +1,5 @@
 
+dct[1][2] = 10
 
+print(dct)
 
-1, 2 = x
-
-print (x)

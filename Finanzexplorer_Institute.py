@@ -23,7 +23,7 @@ Eine Übersicht über alle wx.Python widgets findet sich unter folgendem Link:
 https://wxpython.org/Phoenix/docs/html/gallery.html
 '''
 
-develope_mode = False
+develope_mode = True
 dev_function_stack = []
 WHITE = "#ffffff"           # für das Interface (wx.grid)
 active_konzeptColor = "#ffffff"     # active bedeutet, dieses Konzept ist angewählt
@@ -118,8 +118,8 @@ class DialogRechnungstypInit(wx.Dialog):
         # ---- Widgets erzeugen
         self.panel = wx.Panel(self)
         self.radiobox = wx.RadioBox(self.panel, -1, label="",  # https://wxpython.org/Phoenix/docs/html/wx.RadioBox.html
-                                    choices=["Institutes",
-                                             "Einnahmen-/Ausgabenrechnung (EA)",
+                                    choices=["Einnahmen-/Ausgabenrechnung (EA)",
+                                             "Institute",
                                              "Vermögensübersicht (VÜ)",
                                              "saved Concepts"],
                                     majorDimension=0,
@@ -144,13 +144,14 @@ class DialogRechnungstypInit(wx.Dialog):
         # Alternative zu Modal: .Show()
         self.ShowModal()
 
+    # Auswahl im ersten Fenster zwischen INST, EA, VÜ
     def start(self, _):
         tmp_rechnungstyp_id = self.radiobox.GetSelection()
-        if tmp_rechnungstyp_id == 0:
+        if tmp_rechnungstyp_id == 1:
             model.RECHNUNGSTYP = "INST"
             frame.set_interface(_, "INST")
             self.Close()
-        elif tmp_rechnungstyp_id == 1:
+        elif tmp_rechnungstyp_id == 0:
             model.RECHNUNGSTYP = "EA"
             frame.set_interface(_, "EA")
             self.Close()
@@ -646,6 +647,7 @@ class InstitutsForm(wx.Frame):
 
         self.Show()
 
+    # erzeugt Menü-Bar plus Auswahlmöglichkeiten
     def menuBar(self):
         menuBar = wx.MenuBar()
 
@@ -683,6 +685,7 @@ class InstitutsForm(wx.Frame):
         self.Bind(wx.EVT_MENU, self.open_template, templateItem)
         self.Bind(wx.EVT_MENU, self.develope_mode, developeItem)
 
+    # develope Mode
     def develope_mode(self, _):
         """
         If develope_mode True, docstrings will be printed on console.
@@ -690,9 +693,11 @@ class InstitutsForm(wx.Frame):
         global develope_mode
         develope_mode = not develope_mode
 
+    # schließt Fenster
     def Quit(self, _):
         self.Close()
 
+    # öffnet Institutstemplate
     def open_template(self, _):
         """
         öffnet das Excel-Template, welches wir zum einen bei der Datenaufnahme aus den Haushaltsplänen
@@ -703,6 +708,8 @@ class InstitutsForm(wx.Frame):
         """
         os.system('open Institute/Haushaltsbücher_MPI_Template.xlsx&')
 
+    ## funktioniert gerade nicht
+    # öffnet parallel neues Fenster
     def new_window(self, _):
         """
         Öffnet den Finanzexplorer erneut, um zum Beispiel parallel an der Einnahmen-/Ausgabenrechnung und
@@ -712,6 +719,7 @@ class InstitutsForm(wx.Frame):
         """
         os.system('venv/bin/python Finanzexplorer_Institute.py&')
 
+    # verhindert, dass Form gewechselt werden kann, wenn es ungespeicherte Konzepte gibt
     def set_interface_alert(self, _, typ):
         """
         Falls bereits ein Interface eines bestimmten Rechnungstyps geöffnet ist und nicht dem entspricht,
@@ -734,6 +742,7 @@ class InstitutsForm(wx.Frame):
             else:
                 pass
 
+    # Auswahl aus EA, VÜ oder INST
     def set_interface(self, _, typ):
         """
         wxFrame wird nach dem 'richtigen' Rechnungstyp ausgerichtet: wxWidgets werden neue Funktionen zugeteilt.
@@ -789,7 +798,7 @@ class InstitutsForm(wx.Frame):
             import_mpg_gesamt_data()
             populate_cells()
 
-            self.static_text_02.SetLabel("Saved Conzepts:")
+            self.static_text_02.SetLabel("Saved Concepts:")
 
             # Bindings for "EA" or "VÜ"
             self.button.Bind(wx.EVT_BUTTON, self.button_click_gesamt)
@@ -808,6 +817,8 @@ class InstitutsForm(wx.Frame):
         self.btn_delete.Bind(wx.EVT_BUTTON, self.delete_konzept)
         self.btn_save.Bind(wx.EVT_BUTTON, self.save_konzepte)
 
+    ##
+    # Liest Institute ein und zeigt diese an, aber warum wird es als Dict gespeichert?
     def set_institutes(self):
         """
         Liest die Namen und Pfade aller relevanten Excel-Dateien aus dem Ordner 'Institute' ein und
@@ -835,6 +846,7 @@ class InstitutsForm(wx.Frame):
                 self.institute[name]["path"] = os.path.join(dirpath, f)
                 self.institute[name]["file"] = f
 
+    # returns Institute
     def get_institutes(self):
         return self.institute
 
@@ -847,12 +859,14 @@ class InstitutsForm(wx.Frame):
                 self.static_text_02.SetLabel("Institute:")
         self.tmpStoredKonzepte = None
 
+    # erzeugt Fenster zur Konzeptauswahl/-erstellung über Klasse DialogNewKonzept
     def add_konzept(self, _):
         DialogNewKonzept(self, "new concept").ShowModal()
         # Das Fenster 'DialogNewKonzept' wird geöffnet. Name und Farbe des Konzepts können bestimmt werden
         # .ShowModal(), damit an anderen Fenstern nicht gearbeitet werden kann, solange dieses geöffnet ist
         # Die Alternative zu .ShowModal() wäre .Show()
 
+    # erzeugt neues Konzeptobjekt, Klasse Konzept
     def add_new_konzept(self, name, color):
         self.konzept_listcontrol.InsertItem(self.list_ctrl_index, name)
         self.konzept_listcontrol.SetItemTextColour(self.list_ctrl_index, color)
@@ -862,6 +876,8 @@ class InstitutsForm(wx.Frame):
         self.list_ctrl_index += 1
         self.tmpStoredKonzepte = None
 
+    ## was passiert wenn kein Konzept ausgewählt ist, warum ist das ein Problem?
+    # checkt ob ein Konzept ausgewählt ist, wenn nicht wird die Farbe auf weiß gesetzt
     def check_selection(self, _):
         global active_konzeptColor
         global active_konzept
@@ -869,12 +885,13 @@ class InstitutsForm(wx.Frame):
             active_konzeptColor = "#ffffff"
             active_konzept = None
 
+    ##### ????
     def colour_picked(self, event):
-        global active_konzeptColor
-        global active_konzept
+        global active_konzeptColor, active_konzept
         active_konzeptColor = self.konzept_listcontrol.GetItemTextColour(event.GetIndex())
         active_konzept = self.konzepte[self.konzept_listcontrol.GetItem(event.GetIndex()).GetText()]
 
+    # löscht alle Konzepte
     def reset_konzepte(self, _):
         self.konzepte = {}
         self.konzept_listcontrol.DeleteAllItems()
@@ -885,6 +902,7 @@ class InstitutsForm(wx.Frame):
         self.checked_item(_=None)
         self.tmpStoredKonzepte = None
 
+    # löscht ausgewähltes Konzept
     def delete_konzept(self, _):
         global active_konzept, active_konzeptColor
         self.myGrid.delete_konzept_in_grid()
@@ -915,6 +933,7 @@ class InstitutsForm(wx.Frame):
         else:
             active_konzept = None
             active_konzeptColor = WHITE
+
 
     def get_inst_konzepte(self):
         # print(get_inst_konzepte().__name__)
@@ -973,7 +992,7 @@ class InstitutsForm(wx.Frame):
                                                                   category=ws.cell(row, 1).value,
                                                                   betrag=float(ws.cell(row, col).value)))
                     except KeyError:
-                        print("{} doesn't has sheet {}".format(path[0], sheet))
+                        print("{} doesn't have sheet {}".format(path[0], sheet))
                     except ValueError:
                         print("\nWrong entry: {}\nPath: {}\nSheet: {}\nRow, Column: {}, {}\n".format(wb[sheet].cell(row, col).value, path[0], sheet, row, col))
                 all_konzept_data[path[1]] = konzept_data
