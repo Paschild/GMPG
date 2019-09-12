@@ -539,6 +539,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
         self.ForceRefresh()
         self.parent.GetParent().tmpStoredKonzepte = None
 
+    # Löscht Grid um neu starten zu können
     def erase_grid(self):
         for row in range(200):
             for col in range(58):
@@ -1855,10 +1856,10 @@ def set_hierarchie(schema_id, oberkategorie_id):
 def import_mpg_gesamt_data():
     """
     Importiert die Daten aus den CSV-Dateien (aus der Finanz-DB):
-        Kategorien:
+        Kategorien: http://gmpg-intern.mpiwg-berlin.mpg.de:8888/explorer/549/
         Posten: http://gmpg-intern.mpiwg-berlin.mpg.de:8888/explorer/525/
         Kategorierelationen: http://gmpg-intern.mpiwg-berlin.mpg.de:8888/explorer/526/
-        Schemata:
+        Schemata: http://gmpg-intern.mpiwg-berlin.mpg.de:8888/explorer/548/
 
     Hierarchie der Kategorien innerhalb eines Schemas wird festgelegt.
 
@@ -1919,7 +1920,7 @@ def populate_cells():
         cell.calculate_zwischensumme()
         frame.myGrid.set_cellvalue(cell.get_pos(), str(cell.value[1]) + cell.value[0].bezeichnung)
 
-
+    # alles wird gelöscht, um neu beginnen zu können.
 def fresh_new_start():
     """
     Alles wird gelöscht, um neu beginnen zu können.
