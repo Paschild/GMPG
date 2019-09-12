@@ -18,3 +18,5 @@ Fragen:
 
 - was hat es mit list_ctrl_index auf sich? bzw. mit wx.ListCtrl?
 - Unterschied zwischen trigger category und select whole category?
+
+- migrieren wir ganz auf Molgen? So dass das dann auch einfach über Pycharm läuft?
