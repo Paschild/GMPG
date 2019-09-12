@@ -126,7 +126,7 @@ def import_csv(filename, sep=","):
 
 def import_kategorien():
     global dct_Kategorien
-    for x in import_csv("../Finanzexplorer-Git-data/Finanz_ID-Kategorie"):          # http://gmpg-intern.mpiwg-berlin.mpg.de:8888/explorer/549/
+    for x in import_csv("../Finanzexplorer-Git-data/Finanz_ID-Kategorie"):         # http://gmpg-intern.mpiwg-berlin.mpg.de:8888/explorer/549/
         dct_Kategorien[int(x[0])] = Kategorie(x)
 
 
