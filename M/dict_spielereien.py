@@ -49,3 +49,8 @@ for k, v in dict.items():
 print("----------")
 print(dict_list)
 print(dict_list[0][0, 1])
+
+
+print("uuuuuuuuuuuu")
+print(dict2)
+print(dict2.items())

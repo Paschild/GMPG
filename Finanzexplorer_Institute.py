@@ -166,7 +166,7 @@ class DialogRechnungstypInit(wx.Dialog):
             pass
 
 
-# Einstellungsfenster, welches sich öffnet, bevor die Grafen für die Gesamtrechnung angezeigt werden
+#### ??
 class DialogGesamtPlotSettings(wx.Dialog):
     def __init__(self, parent, title, lst):
         super(DialogGesamtPlotSettings, self).__init__(parent, title=title, size=(250, 130))
@@ -201,7 +201,7 @@ class DialogGesamtPlotSettings(wx.Dialog):
         line_plot_gesamt(frame.new_get_konzept(), mode)
         self.Close()
 
-
+# Auswahlfenster für genauere Plot-Einstellungen, nur bei INST
 class DialogPlotSettings(wx.Dialog):
     def __init__(self, parent, title):
         super(DialogPlotSettings, self).__init__(parent, title=title, size=(250, 130))
@@ -211,7 +211,7 @@ class DialogPlotSettings(wx.Dialog):
 
         self.text01 = wx.StaticText(self.panel, -1, label="Ist- oder Sollwerte: ")
         self.choiceTyp = wx.Choice(self.panel, -1, choices=["IST", "SOLL", "IST & SOLL"], size=(100, 20))
-        self.text02 = wx.StaticText(self.panel, -1, label="Ein Diagramm pro.. ")
+        self.text02 = wx.StaticText(self.panel, -1, label="Ein Diagramm pro ... ")
         self.choiceGrouping = wx.Choice(self.panel, -1, choices=["Institut", "Konzept"], size=(100, 20))
         self.text03 = wx.StaticText(self.panel, -1, label="max Y-Wert: ")
         self.choiceYTicks = wx.Choice(self.panel, -1, choices=["auto", "compareable"], size=(100, 20))
@@ -262,7 +262,7 @@ class DialogPlotSettings(wx.Dialog):
                       (checkbox_inflation+1) * 10 +
                       9)                    # Prüfnummer (Damit kein Plot kommt, falls das Fenster geschlossen wird)
 
-
+# Fenster zum Erstellen von neuen Konzepten, wird in Funktion add_konzept aufgerufen
 class DialogNewKonzept(wx.Dialog):
     def __init__(self, parent, title):
         super(DialogNewKonzept, self).__init__(parent, title=title, size=(200, 100))
@@ -713,7 +713,6 @@ class InstitutsForm(wx.Frame):
         """
         os.system('open Institute/Haushaltsbücher_MPI_Template.xlsx&')
 
-    ## funktioniert gerade nicht
     # öffnet parallel neues Fenster
     def new_window(self, _):
         """
@@ -787,6 +786,7 @@ class InstitutsForm(wx.Frame):
             import_inst_template()
 
             # Bindings for "INST"
+            #self.myGrid.Bind(wx.grid.EVT_GRID_CELL_RIGHT_CLICK, self.nichts)
             self.button.Bind(wx.EVT_BUTTON, self.button_click)
             self.myGrid.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.myGrid.select_cell)
             self.Bind(wx.EVT_MENU, self.button_click, self.plotItem)
@@ -822,8 +822,11 @@ class InstitutsForm(wx.Frame):
         self.btn_delete.Bind(wx.EVT_BUTTON, self.delete_konzept)
         self.btn_save.Bind(wx.EVT_BUTTON, self.save_konzepte)
 
-    ##
-    # Liest Institute ein und zeigt diese an, aber warum wird es als Dict gespeichert?
+    # Füller für Rechtsklick bei Institute
+    def nichts(self, _):
+        pass
+
+    # Liest Institute ein und zeigt diese an
     def set_institutes(self):
         """
         Liest die Namen und Pfade aller relevanten Excel-Dateien aus dem Ordner 'Institute' ein und
@@ -866,7 +869,7 @@ class InstitutsForm(wx.Frame):
 
     # erzeugt Fenster zur Konzeptauswahl/-erstellung über Klasse DialogNewKonzept
     def add_konzept(self, _):
-        DialogNewKonzept(self, "new concept").ShowModal()
+        DialogNewKonzept(self, "New concept").ShowModal()
         # Das Fenster 'DialogNewKonzept' wird geöffnet. Name und Farbe des Konzepts können bestimmt werden
         # .ShowModal(), damit an anderen Fenstern nicht gearbeitet werden kann, solange dieses geöffnet ist
         # Die Alternative zu .ShowModal() wäre .Show()
@@ -881,8 +884,8 @@ class InstitutsForm(wx.Frame):
         self.list_ctrl_index += 1
         self.tmpStoredKonzepte = None
 
-    ## was passiert wenn kein Konzept ausgewählt ist, warum ist das ein Problem?
-    # checkt ob ein Konzept ausgewählt ist, wenn nicht wird die Farbe auf weiß gesetzt
+    # checkt ob ein Konzept ausgewählt ist, wenn nicht wird die Farbe auf weiß gesetzt,
+    # wenn man im Konzeptauswahlmenü neben ein Konzept wird
     def check_selection(self, _):
         global active_konzeptColor
         global active_konzept
@@ -890,7 +893,7 @@ class InstitutsForm(wx.Frame):
             active_konzeptColor = "#ffffff"
             active_konzept = None
 
-    ##### ????
+    # "Gegenfunktion zu check_selection"
     def colour_picked(self, event):
         global active_konzeptColor, active_konzept
         active_konzeptColor = self.konzept_listcontrol.GetItemTextColour(event.GetIndex())
@@ -939,7 +942,7 @@ class InstitutsForm(wx.Frame):
             active_konzept = None
             active_konzeptColor = WHITE
 
-
+    ####
     def get_inst_konzepte(self):
         # print(get_inst_konzepte().__name__)
         if self.tmpStoredKonzepte:      # spart Zeit, da nicht erneut die Excel-Tabellen geöffnet werden müssen
@@ -950,7 +953,8 @@ class InstitutsForm(wx.Frame):
             for x in self.checkbox.GetCheckedItems():
                 checked_institutes_paths.append((self.get_institutes()[self.choices[x]]["path"], self.choices[x]))
 
-            # get existing concepts
+            # get existing concepts, geht alle Zellen der Form durch und speichert deren Namen in listdict
+            # zB ('1967', 'asd'): ['63. Sonstige Zuschüsse a) Bund']
             dct_xkonzepte = defaultdict(dict)
             tmp_xkonzepte = defaultdict(list)
             for c in dct_cells.values():
@@ -966,17 +970,19 @@ class InstitutsForm(wx.Frame):
             # get data according to the selected institutes AND existing concepts
 
             all_konzept_data = {}
+            sheetcheck = 0
             for path in checked_institutes_paths:
+                print(path)
                 konzept_data = defaultdict(list)
                 wb = load_workbook(path[0], data_only=True)
 
                 for sheet in worksheets:
                     try:
                         ws = wb[sheet]       # exp. Worksheet "1954-1963"
-
+                        print(dct_xkonzepte)
                         # get data (sheet by sheet) for each concept and store it in a list (each konzept has one list)
                         for konzeptname, conceptcells_per_year in dct_xkonzepte[sheet].items():
-                            for row in range(1, ws.max_row+1):
+                            for row in range(1, ws.max_row+1):              # ws.max_row gives the number of rows in a worksheet (openpyxl, worksheet)
                                 for v in conceptcells_per_year:
                                     if ws.cell(row, 1).value == v:
                                         # hier wird in die Excel gegangen und
@@ -998,6 +1004,12 @@ class InstitutsForm(wx.Frame):
                                                                   betrag=float(ws.cell(row, col).value)))
                     except KeyError:
                         print("{} doesn't have sheet {}".format(path[0], sheet))
+                        if sheetcheck == 0:
+                            msg = "{} does not contain all of the needed sheets.\nCheck console output for more information. ".format(path[0], sheet)
+                            dlg = wx.MessageDialog(self, msg, 'Warning', style=wx.OK | wx.ICON_INFORMATION | wx.CENTRE)
+                            dlg.ShowModal()
+                            sheetcheck += 1
+
                     except ValueError:
                         print("\nWrong entry: {}\nPath: {}\nSheet: {}\nRow, Column: {}, {}\n".format(wb[sheet].cell(row, col).value, path[0], sheet, row, col))
                 all_konzept_data[path[1]] = konzept_data
@@ -1079,6 +1091,8 @@ class InstitutsForm(wx.Frame):
             self.konzepte[name].plots["MPG-Gesamt"] = dct_xkonzepte[name]
         return dct_xkonzepte
 
+    ## was ist xshow?
+    # Öffnet Auswahlfenster, wenn Plot-Button betätigt wird, nur für INST
     def plot_settings(self, xshow=True):
         data = self.get_inst_konzepte()
         return_code = str(DialogPlotSettings(self, title="plot settings").ShowModal())
@@ -1090,9 +1104,12 @@ class InstitutsForm(wx.Frame):
 
             if not xshow:
                 image = line_plot_inst(data, typ, grouping_by=grouping_by, mode=mode, inflation=inflation, xshow=False)
+                print("kein xshow")
                 return image
             else:
+                print("xshow")
                 line_plot_inst(data, typ, grouping_by=grouping_by, mode=mode, inflation=inflation, xshow=True)
+
 
         else:
             pass
@@ -1828,11 +1845,12 @@ tmp_stack = []
 
 def set_hierarchie(schema_id, oberkategorie_id):
     """
+    Nicht für Institute.
     Jedes Schema bekommt eine Liste ('kategorien_hierarchisch') mit Tuples bestehend aus 3 Werten: (1. Kategorie-Obj,
     2. Folge von '-' zur Markierung der Hierarchie-Ebene, 3. Oberkategorie (Kategorie-Obj) von <1. Kategorie-Obj>).
 
     Zunächst wird diese Funktion für jede einzelne Superkategorie als Parameter (oberkategorie_id) aufgerufen. Ausgehend
-    von diesen 'wanderd' die Funktion rekursiv durch den gesamten Strukturbaum.
+    von diesen 'wandert' die Funktion rekursiv durch den gesamten Strukturbaum.
 
     Superkategorien sind "Einnahmen", "Ausgaben", "Aktiva" und "Passiva", also die oberste Hierarchie-Ebene.
 
@@ -1891,7 +1909,7 @@ def import_mpg_gesamt_data():
                 last_schema = copy.copy(schema)
                 has_schema = True
 
-        if not has_schema and last_schema:
+        if not has_schema and last_schema: # last_schema vllt überflüssig.
             new_schema = copy.deepcopy(last_schema)
             new_schema.id += 1000
             new_schema.jahr = year
