@@ -14,7 +14,7 @@ dct_Schemata = OrderedDict()
 dct_cells = {}
 
 
-class Konzept:
+'''class Konzept:
     def __init__(self, name, color):
         self.rechnungstyp = RECHNUNGSTYP
         self.name = name
@@ -23,7 +23,7 @@ class Konzept:
         self.cells = []     # not the real cell_objects, just the position as (row, col)
 
     def __str__(self):
-        return self.name
+        return self.name'''
 
 
 class Cell:

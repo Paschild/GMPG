@@ -5,7 +5,7 @@ Bugs und fehlende Features:
 
 
 - Fehlermeldung bei Rechtsklick: NewID() ist veraltet, funktioniert aber
-
+- Button für uncertain -> certain
 - Limits überprüfen while tmp_min % tmp_steps:
 
   File "/Users/mzichert/Documents/GMPG/Finanzexplorer_Institute.py", line 2019, in get_limits
@@ -24,14 +24,9 @@ Momentan wird es nur in Pycharm ausgegeben.
 Fragen:
 
 - was hat es mit list_ctrl_index auf sich? bzw. mit wx.ListCtrl?
-- Unterschied zwischen trigger category und select whole category?
-
 - migrieren wir ganz auf Molgen? So dass das dann auch einfach über Pycharm läuft?
 
-- was ist xshow?
 - get_inst_konzepte
-- DialogGesamtPlotSettings-Klasse, was macht sie, ist sie noch nötig?
-- Welche Auswirkungen haben die Choices bei DialogPlotSetting? :P
 
 
 gelöst:

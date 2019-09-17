@@ -26,6 +26,8 @@ https://wxpython.org/Phoenix/docs/html/gallery.html
 develope_mode = True
 dev_function_stack = []
 WHITE = "#ffffff"           # für das Interface (wx.grid)
+# "#000000" = black
+# "#cccccc" = grey
 active_konzeptColor = "#ffffff"     # active bedeutet, dieses Konzept ist angewählt
 active_konzept = None
 
@@ -166,7 +168,7 @@ class DialogRechnungstypInit(wx.Dialog):
             pass
 
 
-#### ??
+# Auswahlmenü für Plotten bei gespeicherten Konzepten
 class DialogGesamtPlotSettings(wx.Dialog):
     def __init__(self, parent, title, lst):
         super(DialogGesamtPlotSettings, self).__init__(parent, title=title, size=(250, 130))
@@ -200,6 +202,7 @@ class DialogGesamtPlotSettings(wx.Dialog):
             mode = 3
         line_plot_gesamt(frame.new_get_konzept(), mode)
         self.Close()
+
 
 # Auswahlfenster für genauere Plot-Einstellungen, nur bei INST
 class DialogPlotSettings(wx.Dialog):
@@ -254,7 +257,7 @@ class DialogPlotSettings(wx.Dialog):
     def create_plot(self, _):
         checkbox_inflation = 1 if self.checkbox_inflation.GetValue() else 0
         # --- EndModal um einen Integer zurückzugeben. Damit ein Integer mehrere Informationen beinhalten kann,
-        # habe ich mit den Dezimalstellen gearbeitet.
+        # habe ich mit den Dezimalstellen gearbeitet. An den Stellen des Integer sind die Choices gespeichert
         # Erscheint mir nicht optimal und ist sicherlich eleganter zu lösen ;)
         self.EndModal((self.choiceTyp.GetSelection()+1) * 10000 +
                       (self.choiceGrouping.GetSelection()+1) * 1000 +
@@ -295,7 +298,7 @@ class DialogNewKonzept(wx.Dialog):
         # rgb_to_hex() ist unten definiert. keine build-in Funktion von Python
         self.Close()
 
-
+# erzeugt Grid
 class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, um mit den Grids in wxPython umzugehen.
                             # http://www.blog.pythonlibrary.org/2010/04/04/wxpython-grid-tips-and-tricks/
     def __init__(self, parent):     # Durch die erste __init__ wird nichts mehr vom parent (wx.grid.Grid) geerbt..
@@ -340,47 +343,53 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
         except AttributeError:  # for cells without oberkategorie
             pass
 
-    # öffnet bei Rechtsklick ein Popup-Menü, funktioniert nicht für INST?
+    # öffnet bei Rechtsklick ein Popup-Menü, nicht für INST
     def show_popup_menu(self, event):
-        self.this_row = event.GetRow()
-        self.this_col = event.GetCol()
-        if not hasattr(self, "popupID1"):
-            self.popupID1 = wx.NewId()
-            self.popupID2 = wx.NewId()
-            self.popupID3 = wx.NewId()
-            self.popupID4 = wx.NewId()
-            self.popupID5 = wx.NewId()
-            self.popupID6 = wx.NewId()
+        if active_konzeptColor != WHITE:
+            self.this_row = event.GetRow()
+            self.this_col = event.GetCol()
+            if not hasattr(self, "popupID1"):
+                self.popupID1 = wx.NewId()
+                self.popupID2 = wx.NewId()
+                self.popupID3 = wx.NewId()
+                self.popupID4 = wx.NewId()
+                self.popupID5 = wx.NewId()
+                self.popupID6 = wx.NewId()
 
-        menu = wx.Menu()
-        item = wx.MenuItem(menu, self.popupID1, "trigger Cell")
-        item_02 = wx.MenuItem(menu, self.popupID2, "trigger category")
-        item_03 = wx.MenuItem(menu, self.popupID3, "select whole category")
-        item_04 = wx.MenuItem(menu, self.popupID4, "unselect whole Category")
-        item_uncertain_cat = wx.MenuItem(menu, self.popupID5, "uncertain")
-        item_uncertain = wx.MenuItem(menu, self.popupID6, "uncertain")
+            menu = wx.Menu()
+            item = wx.MenuItem(menu, self.popupID1, "trigger Cell")
+            item_02 = wx.MenuItem(menu, self.popupID2, "trigger category")
+            item_03 = wx.MenuItem(menu, self.popupID3, "select whole category")
+            item_04 = wx.MenuItem(menu, self.popupID4, "unselect whole Category")
+            item_uncertain_cat = wx.MenuItem(menu, self.popupID5, "uncertain")
+            item_uncertain = wx.MenuItem(menu, self.popupID6, "uncertain")
 
-        sub_menu = wx.Menu()
-        sub_menu.Append(item_02)
-        sub_menu.Append(item_03)
-        sub_menu.Append(item_04)
-        sub_menu.Append(item_uncertain_cat)
+            sub_menu = wx.Menu()
+            sub_menu.Append(item_02)
+            sub_menu.Append(item_03)
+            sub_menu.Append(item_04)
+            sub_menu.Append(item_uncertain_cat)
 
-        menu.Append(item)
-        menu.Append(wx.NewId(), "Category", sub_menu)
-        menu.Append(item_uncertain)
+            menu.Append(item)
+            menu.Append(wx.NewId(), "Category", sub_menu)
+            menu.Append(item_uncertain)
 
-        self.PopupMenu(menu)
+            self.PopupMenu(menu)
 
-        self.Bind(wx.EVT_MENU, self.select_cell, item)
-        self.Bind(wx.EVT_MENU, self.trigger_kategorie_from_popup, item_02)
-        self.Bind(wx.EVT_MENU, self.select_whole_category_from_popup, item_03)
-        self.Bind(wx.EVT_MENU, self.unselect_whole_category_from_popup, item_04)
-        self.Bind(wx.EVT_MENU, self.select_uncertain_from_popup, item_uncertain)
-        self.Bind(wx.EVT_MENU, self.select_uncertain_cat_from_popup, item_uncertain_cat)
-        menu.Destroy()
+            self.Bind(wx.EVT_MENU, self.select_cell, item)
+            self.Bind(wx.EVT_MENU, self.trigger_kategorie_from_popup, item_02)
+            self.Bind(wx.EVT_MENU, self.select_whole_category_from_popup, item_03)
+            self.Bind(wx.EVT_MENU, self.unselect_whole_category_from_popup, item_04)
+            self.Bind(wx.EVT_MENU, self.select_uncertain_from_popup, item_uncertain)
+            self.Bind(wx.EVT_MENU, self.select_uncertain_cat_from_popup, item_uncertain_cat)
+            menu.Destroy()
 
-    # wählt
+        else:
+            msg = "Add or select a concept first."
+            dlg = wx.MessageDialog(self, msg, 'Information', style=wx.OK | wx.ICON_INFORMATION | wx.CENTRE)
+            dlg.ShowModal()
+
+    # wählt Kategorie über Popup aus
     def trigger_kategorie_from_popup(self, _):
         kat_id = self.get_cell(self.this_row, self.this_col).value[0].id
         for c in model.get_dct_cells().values():
@@ -398,6 +407,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
                 self.SetCellBackgroundColour(c.row, c.col, c.color)
         self.ForceRefresh()
 
+    # wählt ganze Kategorie über Popup aus
     def select_whole_category_from_popup(self, _):
         kat_id = self.get_cell(self.this_row, self.this_col).value[0].id
         for c in model.get_dct_cells().values():
@@ -409,6 +419,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
                 self.SetCellBackgroundColour(c.row, c.col, c.color)
         self.ForceRefresh()
 
+    # wählt ganze Kategorie von Popup ab
     def unselect_whole_category_from_popup(self, _):
         kat_id = self.get_cell(self.this_row, self.this_col).value[0].id
         for c in model.get_dct_cells().values():
@@ -417,6 +428,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
                 c.konzept = None
         self.ForceRefresh()
 
+    # fügt eine uncertain-Zelle zu Konzept hinzu (in liste uncertain), ändert Schriftfarbe zu Konzeptfarbe
     def select_uncertain_from_popup(self, _):
         current_textcolor = frame.myGrid.GetCellTextColour(self.this_row, self.this_col)
         if active_konzeptColor != "#ffffff" and active_konzeptColor != current_textcolor:
@@ -427,6 +439,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
             active_konzept.uncertain.remove((self.this_row, self.this_col))
         self.ForceRefresh()
 
+    # fügt eine uncertain-Kategorie zu Konzept hinzu (in liste uncertain), ändert Schriftfarbe zu Konzeptfarbe
     def select_uncertain_cat_from_popup(self, _):
         current_cell = self.get_cell(self.this_row, self.this_col)
         current_textcolor = frame.myGrid.GetCellTextColour(self.this_row, self.this_col)
@@ -441,18 +454,20 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
                         active_konzept.uncertain.remove((c.row, c.col))
         self.ForceRefresh()
 
+    # splitet Tupel mit (row, col) in cell_row und cell_pos)
     def set_cellvalue(self, cellpos, value):
-        cell_row, cell_col = cellpos
+        cell_row, cell_col = cellpos        # splitet Tupel mit (row, col) in cell_row und cell_pos)
         self.SetCellValue(cell_row, cell_col, value)
 
+    # Wählt eine Zelle über Popup-Menü aus (trigger cell)
     def select_cell(self, event):
-        if active_konzeptColor != "#ffffff":    # active_konzeptColor == "#ffffff" würde bedeuten,
-                                                # es ist kein Konzept ausgewählt. Mitlerweile wird beim erzeugen eines
-                                                # Konzept dieses auch direkt auf Aktiv gesetzt und macht diese Bedingung
-                                                # evtl überflüßig
+        if active_konzeptColor != WHITE:  # active_konzeptColor == "#ffffff" würde bedeuten,
+            # es ist kein Konzept ausgewählt. Mitlerweile wird beim erzeugen eines
+            # Konzept dieses auch direkt auf Aktiv gesetzt und macht diese Bedingung
+            # evtl überflüßig
             try:
                 if model.RECHNUNGSTYP == "INST":
-                    c = dct_cells[(event.GetRow(), event.GetCol())] # c = Zelle, die von der Maus angewählt wurde
+                    c = dct_cells[(event.GetRow(), event.GetCol())]  # c = Zelle, die von der Maus angewählt wurde
                 else:
                     c = model.get_dct_cells()[(self.this_row, self.this_col)]
 
@@ -463,11 +478,11 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
                         if c.color != active_konzeptColor:
                             c.color = active_konzeptColor
                             c.konzept = active_konzept
-                            if (c.row, c.col) not in self.parent.GetParent().konzepte[c.konzept.name].cells:
-                                self.parent.GetParent().konzepte[c.konzept.name].cells.append((c.row, c.col))
+                            if (c.row, c.col) not in self.GetGrandParent().konzepte[c.konzept.name].cells:
+                                self.parent.GetGrandParent().konzepte[c.konzept.name].cells.append((c.row, c.col))
                         else:
                             if c.color != WHITE:
-                                self.parent.GetParent().konzepte[c.konzept.name].cells.remove((c.row, c.col))
+                                self.parent.GetGrandParent().konzepte[c.konzept.name].cells.remove((c.row, c.col))
                             c.color = WHITE
                             c.konzept = None
 
@@ -486,8 +501,9 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
             dlg = wx.MessageDialog(self, msg, 'Information', style=wx.OK | wx.ICON_INFORMATION | wx.CENTRE)
             dlg.ShowModal()
 
+    # Wählt eine Kategorie über Doppelklick aus
     def trigger_kategorie(self, event):
-        if active_konzeptColor != "#ffffff":
+        if active_konzeptColor != WHITE:
             try:
                 current_cell = self.get_cell(event.GetRow(), event.GetCol())
                 kat_id = current_cell.value[0].id
@@ -512,6 +528,7 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
             dlg = wx.MessageDialog(self, msg, 'Information', style=wx.OK | wx.ICON_INFORMATION | wx.CENTRE)
             dlg.ShowModal()
 
+    # Teil von reset_konzepte, setzte alle Zellen auf weiß zurück und die Schriftfarbe auf schwarz.
     def reset_all_categories(self):
         tmp_dct = dct_cells.values() if model.RECHNUNGSTYP == "INST" else model.get_dct_cells().values()
 
@@ -550,10 +567,11 @@ class MyGrid(wx.grid.Grid): # 'Mouse vs. Python' hat mir Anfangs sehr geholfen, 
                 self.SetCellBackgroundColour(row, col, WHITE)
                 self.set_cellvalue((row, col), "")
 
+    # gibt Zelle an row und col zurück
     def get_cell(self, row, col):
         return model.get_dct_cells()[(row, col)]
 
-
+# Für INST
 class InstitutsForm(wx.Frame):
     def __init__(self):
         """Constructor"""
@@ -1091,7 +1109,6 @@ class InstitutsForm(wx.Frame):
             self.konzepte[name].plots["MPG-Gesamt"] = dct_xkonzepte[name]
         return dct_xkonzepte
 
-    ## was ist xshow?
     # Öffnet Auswahlfenster, wenn Plot-Button betätigt wird, nur für INST
     def plot_settings(self, xshow=True):
         data = self.get_inst_konzepte()
@@ -1102,12 +1119,11 @@ class InstitutsForm(wx.Frame):
             mode = ["auto", "compareable"][int(return_code[2]) - 1]
             inflation = [False, True][int(return_code[3]) - 1]
 
+            # xshow für PDF, da für PDF teilweise auch nur ein image benötigt wird
             if not xshow:
                 image = line_plot_inst(data, typ, grouping_by=grouping_by, mode=mode, inflation=inflation, xshow=False)
-                print("kein xshow")
                 return image
             else:
-                print("xshow")
                 line_plot_inst(data, typ, grouping_by=grouping_by, mode=mode, inflation=inflation, xshow=True)
 
 
@@ -1874,7 +1890,7 @@ def set_hierarchie(schema_id, oberkategorie_id):
             set_hierarchie(schema_id, kr.target_id)
     tmp_stack.pop()
 
-
+# Importiert die Daten aus den CSVs, EA und VÜ über Model und ruft Hierarchienfunktion auf
 def import_mpg_gesamt_data():
     """
     Importiert die Daten aus den CSV-Dateien (aus der Finanz-DB):
@@ -1909,6 +1925,7 @@ def import_mpg_gesamt_data():
                 last_schema = copy.copy(schema)
                 has_schema = True
 
+        # das nicht alle Jahre ein Schema haben, wird hier das Schema des vorherigen Jahres kopiert.
         if not has_schema and last_schema: # last_schema vllt überflüssig.
             new_schema = copy.deepcopy(last_schema)
             new_schema.id += 1000
@@ -1919,7 +1936,7 @@ def import_mpg_gesamt_data():
     for new in new_schemata:
         model.get_dct_schemata()[new.id] = new
 
-
+# Zellen werden im Grid nach Vorlage der Hierarchie im Schema befüllt.
 def populate_cells():
     """
     Zellen im Grid werden nach Vorlage der Hierarchie im Schema befüllt.
@@ -1942,7 +1959,8 @@ def populate_cells():
         cell.calculate_zwischensumme()
         frame.myGrid.set_cellvalue(cell.get_pos(), str(cell.value[1]) + cell.value[0].bezeichnung)
 
-    # alles wird gelöscht, um neu beginnen zu können.
+
+# alles wird gelöscht, um neu beginnen zu können.
 def fresh_new_start():
     """
     Alles wird gelöscht, um neu beginnen zu können.
@@ -1963,7 +1981,7 @@ def get_saves():
     :return: saves_path = Liste von Pfaden zu den  Dateien aus dem Ordner 'Saves'
     """
     saves_path = {}
-    for (dirpath, dirnames, filenames) in os.walk("../../../Saves"):
+    for (dirpath, dirnames, filenames) in os.walk("../Saves"):
         filenames = [x for x in filenames]
         for f in filenames:
             filepath = os.path.join(dirpath, f)
