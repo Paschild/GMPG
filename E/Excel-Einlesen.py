@@ -24,12 +24,14 @@ print(sheet["A:B"])
 
 
 
-'''for row in sheet.iter_rows(min_row=1,
-                           max_row=3,
-                           min_col=1,
-                           max_col=3):
+'''for col in sheet.iter_cols(min_col=1,
+                           max_col=4,
+                           min_row=5,
+                           max_row=10,
+                           values_only=True):
 
-    print(row)'''   #Lee de manera vertical (valor por column) la lista Excel
+
+    print(col))'''   #Lee de manera vertical (valor por column) la lista Excel
 
 
 
